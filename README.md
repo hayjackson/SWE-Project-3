@@ -10,9 +10,6 @@ This project is a terminal-based review application with a Flask REST API compon
 - **Review System**: Users can leave ratings and comments for media items.
 - **REST API for Books, Movies, and TV Shows**: Flask API to view, add, and manage books specifically.
 
-## Project Structure
-The project is organized into several folders to maintain modularity and readability.
-
 ## Course Context
 This project was created as part of the Software Engineering (SWE) course at the College of Wooster. The purpose of this project is to practice software engineering principles such as modularity, code organization, and RESTful API design.
 
