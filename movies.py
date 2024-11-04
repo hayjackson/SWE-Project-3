@@ -30,7 +30,7 @@ def add_movie(movie_name):
     }
     data["movies"].append(movie)
     save_data(data)
-    print(f"Movie '{movie_name}' added successfully.")
+    return {"message": f"Movie '{movie_name}' added successfully.", "movie": movie}
 
 # Adding a review to a movie
 def add_review(movie_id, rating, note):
@@ -45,9 +45,8 @@ def add_review(movie_id, rating, note):
             }
             movie["reviews"].append(review)
             save_data(data)
-            print(f"Review added to movie ID {movie_id}.")
-            return
-    print("Movie not found.")
+            return {"message": f"Review added to movie ID {movie_id}.", "review": review}
+    return {"error": "Movie not found."}
 
 # Editing an existing review
 def edit_review(movie_id, review_id, rating=None, note=None):
@@ -61,11 +60,9 @@ def edit_review(movie_id, review_id, rating=None, note=None):
                     if note is not None:
                         review["note"] = note
                     save_data(data)
-                    print(f"Review ID {review_id} for movie ID {movie_id} updated.")
-                    return
-            print("Review not found.")
-            return
-    print("Movie not found.")
+                    return {"message": f"Review ID {review_id} for movie ID {movie_id} updated.", "review": review}
+            return {"error": "Review not found."}
+    return {"error": "Movie not found."}
 
 # Deleting a review
 def delete_review(movie_id, review_id):
@@ -74,36 +71,25 @@ def delete_review(movie_id, review_id):
         if movie["id"] == movie_id:
             movie["reviews"] = [review for review in movie["reviews"] if review["review_id"] != review_id]
             save_data(data)
-            print(f"Review ID {review_id} deleted from movie ID {movie_id}.")
-            return
-    print("Movie or review not found.")
-
+            return {"message": f"Review ID {review_id} deleted from movie ID {movie_id}."}
+    return {"error": "Movie or review not found."}
 
 # Deleting a movie and its associated reviews
 def delete_movie(movie_id):
     data = load_data()
-    # Filter out the movie to delete
     data["movies"] = [movie for movie in data["movies"] if movie["id"] != movie_id]
     save_data(data)
-    print(f"Movie ID {movie_id} and its reviews have been deleted.")
-
+    return {"message": f"Movie ID {movie_id} and its reviews have been deleted."}
 
 # Viewing all reviews
 def view_reviews():
     data = load_data()
-    for movie in data["movies"]:
-        print(f"Movie ID: {movie['id']} - Name: {movie['name']}")
-        for review in movie["reviews"]:
-            print(f"  Review ID: {review['review_id']} | Rating: {review['rating']} | Note: {review['note']}")
+    return data
 
 # Searching and filter reviews by movie ID
 def search_reviews(movie_id):
     data = load_data()
     for movie in data["movies"]:
         if movie["id"] == movie_id:
-            print(f"Movie ID: {movie['id']} - Name: {movie['name']}")
-            for review in movie["reviews"]:
-                print(f"  Review ID: {review['review_id']} | Rating: {review['rating']} | Note: {review['note']}")
-            return
-    print("Movie not found.")
-
+            return movie
+    return {"error": "Movie not found."}
