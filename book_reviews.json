@@ -1,0 +1,15 @@
+{
+    "books": [
+        {
+            "id": 1,
+            "title": "The Naturals",
+            "reviews": [
+                {
+                    "review_id": 1,
+                    "rating": 5,
+                    "note": "This book mixes YA and crime perfectly! Kept me engaged throughout the whole story"
+                }
+            ]
+        }
+    ]
+}
