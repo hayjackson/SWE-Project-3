@@ -14,9 +14,11 @@ This project is a terminal-based review application with a Flask REST API compon
 This project was created as part of the Software Engineering (SWE) course at the College of Wooster. The purpose of this project is to practice software engineering principles such as modularity, code organization, and RESTful API design.
 
  ## Contributors
+ ## Backend
  - Aditi Jha
  - Mastewal Berhe
  - Kai Francis
+ ## Frontend
  - Sumeyya Sherief
  - Rebecca Rogovich
  - Haylee Jackson
