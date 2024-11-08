@@ -58,7 +58,7 @@ def delete_book(book_id):
 def load_data():
     try:
         with open(DATABASE_FILE, 'r') as file:
-            return json.load(file)
+            return json.load(file) 
     except FileNotFoundError:
         return {"books": []}
     except json.JSONDecodeError:
