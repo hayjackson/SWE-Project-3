@@ -1,8 +1,14 @@
 # Book Tab of the review app
-# Author: Kai Francis
+# Author: Backend: Kai Francis Frontend: Sumeyya Sherief
 
+from flask import Flask, jsonify, request
 import json
 import os
+
+
+# Define Flask app and configure ReactPy
+app = Flask(__name__)
+
 
 # JSON file to store data
 DATABASE_FILE = 'book_reviews.json'
@@ -19,7 +25,8 @@ def save_data(data):
     with open(DATABASE_FILE, 'w') as file:
         json.dump(data, file, indent=4)
 
-# Adding a new book
+
+#Adding a new book
 def add_book(book_title):
     data = load_data()
     book = {
@@ -103,3 +110,6 @@ def search_reviews(book_id):
                 print(f"  Review ID: {review['review_id']} | Rating: {review['rating']} | Note: {review['note']}")
             return
     print("Book not found.")
+
+if __name__ == '__main__':
+    app.run(debug=True)
