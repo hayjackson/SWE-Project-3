@@ -2,6 +2,7 @@ import gradio as gr
 import json
 import os
 
+
 # Using the same database file as the backend
 DATABASE_FILE = 'book_reviews.json'
 
