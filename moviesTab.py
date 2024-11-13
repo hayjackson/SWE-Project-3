@@ -1,3 +1,6 @@
+# Frontend of the Movies Tab
+# Rebecca Rogovich
+
 import gradio as gr
 import json
 import os
