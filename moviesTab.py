@@ -243,4 +243,9 @@
 #             outputs=[del_review_output]
 #         )
 
+<<<<<<< HEAD
 # if __name__ == "__main__":
+=======
+if __name__ == "__main__":
+    demo.launch()
+>>>>>>> 94a56609eba622b0f6a1532b7b5f3b535d6a395f
