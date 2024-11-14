@@ -5,9 +5,6 @@ import json
 import os
 
 
-# Define Flask app and configure ReactPy
-app = Flask(__name__)
-
 
 DATABASE_FILE = 'book_reviews.json'
 
