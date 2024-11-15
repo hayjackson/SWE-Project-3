@@ -88,11 +88,11 @@ def delete_book(book_id):
         return response.json()["message"]
     return response.json()["error"]
 
-def delete_book_review(book_id, review_id):
-    response = requests.delete(f"{API_BASE_URL}/books/{book_id}")
-    if response.status_code == 200:
-        return response.json()["message"]
-    return response.json()["error"]
+# def delete_book_review(book_id, review_id):
+#     response = requests.delete(f"{API_BASE_URL}/books/{book_id}")
+#     if response.status_code == 200:
+#         return response.json()["message"]
+#     return response.json()["error"]
 
 # Gradio Interface
 with gr.Blocks() as demo:
