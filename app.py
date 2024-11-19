@@ -191,22 +191,5 @@ with gr.Blocks() as demo:
                 view_book_reviews, inputs=view_reviews_book_id_input, outputs=book_reviews_output
             )
 
-        # Delete Book
-        with gr.Row():
-            delete_book_id_input = gr.Number(label="Book ID to Delete", value=1)
-            delete_book_button = gr.Button("Delete Book")
-            delete_book_output = gr.Textbox(label="Status")
-            delete_book_button.click(delete_book, inputs=delete_book_id_input, outputs=delete_book_output)
-
-        # Delete Book Review
-        # with gr.Row():
-        #     delete_book_review_book_id_input = gr.Number(label="Book ID", value=1)
-        #     delete_book_review_id_input = gr.Number(label="Review ID to Delete", value=1)
-        #     delete_book_review_button = gr.Button("Delete Review")
-        #     delete_book_review_output = gr.Textbox(label="Status")
-        #     delete_book_review_button.click(
-        #         delete_book_review, inputs=[delete_book_review_book_id_input, delete_book_review_id_input], outputs=delete_book_review_output
-        #     )
-
 if __name__ == "__main__":
     demo.launch()
