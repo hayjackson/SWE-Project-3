@@ -11,14 +11,10 @@ DATABASE_FILE = 'tv_shows.json'
 def load_data():
     if os.path.exists(DATABASE_FILE):
         with open(DATABASE_FILE, 'r') as file:
-            data = json.load(file)
-           
-            for i, show in enumerate(data["tv_shows"]):
-                if 'id' not in show:
-                    show['id'] = i + 1
-            return data
+            return json.load(file)
     return {"tv_shows": []}
 
+    
 # Saving data to the JSON file
 def save_data(data):
     with open(DATABASE_FILE, 'w') as file:
@@ -27,119 +23,6 @@ def save_data(data):
 
 
 # Function to add tv_show
-def add_show():
-    data = load_data()
-    title = input("Enter the TV show title: ")
-    description = input("Enter the description: ")
-    genre = input("Enter the genre: ")
-    year = input("Enter the publication year: ")
-    actors = input("Enter the main actors (comma-separated): ").split(',')
-    rating = int(input("Enter the rating (1-5): "))
-    
-    show_id = max([show.get('id', 0) for show in data["tv_shows"]]) + 1
-    
-    show = {
-        "id": show_id,
-        "title": title,
-        "description": description,
-        "genre": genre,
-        "year": year,
-        "actors": [actor.strip() for actor in actors],
-        "rating": rating
-    }
-    
-    data["tv_shows"].append(show)
-    save_data(data)
-    print(f"Added: {title} (ID: {show_id})")
-
-# Function to edit a TV show 
-def edit_show():
-    data = load_data()
-    display_shows()
-    show_id = int(input("Enter the ID of the show you want to edit: "))
-    
-    for show in data["tv_shows"]:
-        if show["id"] == show_id:
-            title = input("Enter the new title (or press Enter to keep current): ") or show['title']
-            description = input("Enter the new description (or press Enter to keep current): ") or show['description']
-            genre = input("Enter the new genre (or press Enter to keep current): ") or show['genre']
-            year = input("Enter the new publication year (or press Enter to keep current): ") or show['year']
-            actors = input("Enter the new main actors (comma-separated, or press Enter to keep current): ")
-            actors = actors.split(',') if actors else show['actors']
-            rating = input("Enter the new rating (1-5, or press Enter to keep current): ")
-            rating = int(rating) if rating else show['rating']
-
-            show.update({
-                "title": title,
-                "description": description,
-                "genre": genre,
-                "year": year,
-                "actors": [actor.strip() for actor in actors],
-                "rating": rating
-            })
-            save_data(data)
-            print(f"Edited: {title} (ID: {show_id})")
-            return
-    print("Show not found")
-
-# Function to delete a TV show
-def delete_show():
-    data = load_data()
-    display_shows()
-    show_id = int(input("Enter the ID of the show you want to delete: "))
-    
-    for index, show in enumerate(data["tv_shows"]):
-        if show["id"] == show_id:
-            deleted_show = data["tv_shows"].pop(index)
-            save_data(data)
-            print(f"Deleted: {deleted_show['title']} (ID: {show_id})")
-            return
-    print("Show not found")
-# Function to display all TV shows
-def display_shows():
-    data = load_data()
-    if not data["tv_shows"]:
-        print("No TV shows in the list.")
-    else:
-        for show in data["tv_shows"]:
-            show_id = show.get('id', 'N/A')
-            print(f"ID: {show_id} - {show['title']} ({show['year']}) - Rating: {show['rating']}/5")
-            print(f"   Genre: {show['genre']}")
-            print(f"   Actors: {', '.join(show['actors'])}")
-            print(f"   Description: {show['description']}")
-            print()
-
-
-# Function to search for TV shows using the TVmaze API
-def search_shows(query):
-    base_url = "http://api.tvmaze.com"
-    response = requests.get(f"{base_url}/search/shows", params={"q": query})
-    return response.json()
-
-# Function to get TV show details from the TVmaze API
-def get_show_details(show_id):
-    base_url = "http://api.tvmaze.com"
-    response = requests.get(f"{base_url}/shows/{show_id}?embed=cast")
-    return response.json()
-
-# Function to search and add a show using the API
-def search_and_add_show():
-    query = input("Enter the TV show name to search: ")
-    results = search_shows(query)
-    if results:
-        show_id = results[0]['show']['id']
-        details = get_show_details(show_id)
-        title = details['name']
-        description = details['summary'].replace('<p>', '').replace('</p>', '')
-        genre = ', '.join(details['genres'])
-        year = details['premiered'][:4] if details['premiered'] else 'N/A'
-        actors = [actor['person']['name'] for actor in details['_embedded']['cast'][:3]]
-        rating = int(input(f"Enter the rating for {title} (1-5): "))
-        
-        add_show_from_api(title, description, genre, year, actors, rating)
-    else:
-        print("No results found")
-
 def add_show_from_api(title, description, genre, year, actors, rating):
     data = load_data()
     show_id = max([show.get('id', 0) for show in data["tv_shows"]]) + 1
@@ -154,37 +37,103 @@ def add_show_from_api(title, description, genre, year, actors, rating):
     }
     data["tv_shows"].append(show)
     save_data(data)
-    print(f"Added: {title} (ID: {show_id})")
+    return show
 
-# Main menu
-def main_menu():
+
+def get_show(show_id):
+    data = load_data()
+    for show in data["tv_shows"]:
+        if show["id"] == show_id:
+            return show
+    return None
+
+# Function to edit a TV show 
+def edit_show(show_id, new_data):
+    data = load_data()
+    for show in data["tv_shows"]:
+        if show["id"] == show_id:
+            show.update(new_data)
+            save_data(data)
+            return show
+    return None
+
+# Function to delete a TV show
+def delete_show(show_id):
+    data = load_data()
+    for index, show in enumerate(data["tv_shows"]):
+        if show["id"] == show_id:
+            del data["tv_shows"][index]
+            save_data(data)
+            return True
+    return False
+
+
+# Function to search for TV shows using the TVmaze API
+def search_shows(query):
+    base_url = "http://api.tvmaze.com"
+    response = requests.get(f"{base_url}/search/shows", params={"q": query})
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print("Error: unable to fetch shows")
+        return  []
+    
+#Filter by genre functionality 
+def filter_shows_by_genre(genre):
+    data = load_data()
+    filtered_shows = [show for show in data["tv_shows"] if genre.lower() in show["genre"].lower()]
+    return filtered_shows
+    
+def search_and_add_show(query):
+    # Search for shows using the API
+    search_results = search_shows(query)
+    
+    if not search_results:
+        print(f"No results found for '{query}'")
+        return None
+
+    # Display search results
+    print(f"Search results for '{query}':")
+    for i, result in enumerate(search_results[:5], 1):  # Limit to top 5 results
+        show = result['show']
+        print(f"{i}. {show['name']} ({show.get('premiered', 'N/A')[:4]})")
+
+    # Ask user to select a show
     while True:
-        print("\n--- TV Show Review App ---")
-        print("1. Add a TV show manually")
-        print("2. Search and add a TV show from API")
-        print("3. Edit a TV show")
-        print("4. Delete a TV show")
-        print("5. Display all TV shows")
-        print("6. Exit")
-        
-        choice = input("Enter your choice (1-6): ")
-        
-        if choice == '1':
-            add_show()
-        elif choice == '2':
-            search_and_add_show()
-        elif choice == '3':
-            edit_show()
-        elif choice == '4':
-            delete_show()
-        elif choice == '5':
-            display_shows()
-        elif choice == '6':
-            print("Thank you for using the TV Show Review App!")
-            break
-        else:
+        try:
+            choice = int(input("Enter the number of the show you want to add (0 to cancel): "))
+            if 0 <= choice <= len(search_results):
+                break
             print("Invalid choice. Please try again.")
+        except ValueError:
+            print("Please enter a valid number.")
 
-# Run the app
-if __name__ == "__main__":
-    main_menu()
+    if choice == 0:
+        return None
+
+    # Get the selected show
+    selected_show = search_results[choice - 1]['show']
+
+    # Extract relevant information
+    title = selected_show['name']
+    description = selected_show.get('summary', '').replace('<p>', '').replace('</p>', '')
+    genre = ', '.join(selected_show.get('genres', []))
+    year = selected_show.get('premiered', '')[:4]
+    actors = ', '.join([actor['person']['name'] for actor in selected_show.get('_embedded', {}).get('cast', [])[:3]])
+    rating = selected_show.get('rating', {}).get('average', 0)
+
+    # Add the show to the database
+    new_show = add_show_from_api(title, description, genre, year, actors, rating)
+    print(f"Added: {new_show['title']}")
+    return new_show
+
+def display_shows_by_genre():
+    genre = input("Enter the genre to filter by: ")
+    filtered_shows = filter_shows_by_genre(genre)
+    
+    if not filtered_shows:
+        print(f"No shows found in the '{genre}' genre.")
+    else:
+        print(f"Shows in the '{genre}' genre:")
+        for show in filtered_shows:
+            print(f"- {show['title']} ({show['year']})")
