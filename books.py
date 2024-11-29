@@ -19,11 +19,13 @@ def save_data(data):
         json.dump(data, file, indent=4)
 
 # Adding a new book
-def add_book(book_title):
+def add_book(book_title, genre):
     data = load_data()
+    book_id = len(data["books"]) + 1
     book = {
-        "id": len(data["books"]) + 1,
+        "id": book_id,
         "title": book_title,
+        "genre": genre,
         "reviews": []
     }
     data["books"].append(book)
@@ -51,6 +53,22 @@ def get_book(book_id):
         if book["id"] == book_id:
             return book
     return None
+
+def filter_books_by_genre(genre):
+    data = load_data()
+    filtered_books = [book for book in data["books"] if genre.lower() in book["genre"].lower()]
+    return filtered_books
+
+def display_books_by_genre():
+    genre = input("Enter the genre to filter by: ")
+    filtered_books = filter_books_by_genre(genre)
+    
+    if not filtered_books:
+        print(f"No books found in the '{genre}' genre.")
+    else:
+        print(f"Books in the '{genre}' genre:")
+        for book in filtered_books:
+            print(f"- {book['title']}")
 
 def delete_book(book_id):
     data = load_data()

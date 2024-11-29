@@ -103,6 +103,13 @@ def delete_single_book(book_id):
         return jsonify({"message": f"Book ID {book_id} deleted"}), 200
     return jsonify({"error": "Book not found"}), 404
 
+@app.route('/books/genre', methods=['GET'])
+def get_books_by_genre():
+    genre = request.args.get('genre', '')
+    filtered_books = filter_books_by_genre(genre)
+    if not filtered_books:
+        return jsonify({"message": f"No books found in the '{genre}' genre."}), 404
+    return jsonify(filtered_books), 200
 
 #TV shows Endpoints
 @app.route('/tv_shows', methods = ['GET'])
