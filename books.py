@@ -1,141 +1,103 @@
 # Book Tab of the review app
 # Author: Kai Francis
 
-import json
-import os
+import sqlite3
 
+DATABASE = 'books.db'
 
+def get_db_connection():
+    connection = sqlite3.connect(DATABASE)
+    connection.row_factory = sqlite3.Row  # Allows accessing rows like dictionaries
+    return connection
 
-DATABASE_FILE = 'book_reviews.json'
+# Create tables if they do not exist
+def initialize_database():
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-def load_data():
-    if os.path.exists(DATABASE_FILE):
-        with open(DATABASE_FILE, 'r') as file:
-            return json.load(file)
-    return {"books": []}
+    # Create books table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS books (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            genre TEXT,
+            reviews_count INTEGER DEFAULT 0
+        )
+    ''')
 
-def save_data(data):
-    with open(DATABASE_FILE, 'w') as file:
-        json.dump(data, file, indent=4)
+    # Create reviews table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            book_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,
+            note TEXT,
+            FOREIGN KEY (book_id) REFERENCES books (id)
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-# Adding a new book
+# Add a new book
 def add_book(book_title, genre):
-    data = load_data()
-    book_id = len(data["books"]) + 1
-    book = {
-        "id": book_id,
-        "title": book_title,
-        "genre": genre,
-        "reviews": []
-    }
-    data["books"].append(book)
-    save_data(data)
-    return book  # Return the book dictionary for API responses
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO books (title, genre) VALUES (?, ?)",
+        (book_title, genre)
+    )
+    conn.commit()
+    book_id = cursor.lastrowid
+    conn.close()
+    return {"id": book_id, "title": book_title, "genre": genre}
 
+# Add a review to a book
 def add_review(book_id, rating, note):
-    data = load_data()
-    for book in data["books"]:
-        if book["id"] == book_id:
-            review_id = len(book["reviews"]) + 1
-            review = {
-                "review_id": review_id,
-                "rating": rating,
-                "note": note
-            }
-            book["reviews"].append(review)
-            save_data(data)
-            return review
-    return None  # Return None if book not found
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO reviews (book_id, rating, note) VALUES (?, ?, ?)",
+        (book_id, rating, note)
+    )
+    # Update the reviews_count in the books table
+    cursor.execute(
+        "UPDATE books SET reviews_count = reviews_count + 1 WHERE id = ?",
+        (book_id,)
+    )
+    conn.commit()
+    conn.close()
+    return {"book_id": book_id, "rating": rating, "note": note}
 
+# Retrieve a specific book
 def get_book(book_id):
-    data = load_data()
-    for book in data["books"]:
-        if book["id"] == book_id:
-            return book
-    return None
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM books WHERE id = ?", (book_id,))
+    book = cursor.fetchone()
+    conn.close()
+    return dict(book) if book else None
 
+# Filter books by genre
 def filter_books_by_genre(genre):
-    data = load_data()
-    filtered_books = [book for book in data["books"] if genre.lower() in book["genre"].lower()]
-    return filtered_books
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM books WHERE LOWER(genre) LIKE ?",
+        (f"%{genre.lower()}%",)
+    )
+    books = cursor.fetchall()
+    conn.close()
+    return [dict(book) for book in books]
 
-def display_books_by_genre():
-    genre = input("Enter the genre to filter by: ")
-    filtered_books = filter_books_by_genre(genre)
-    
-    if not filtered_books:
-        print(f"No books found in the '{genre}' genre.")
-    else:
-        print(f"Books in the '{genre}' genre:")
-        for book in filtered_books:
-            print(f"- {book['title']}")
-
+# Delete a book and its reviews
 def delete_book(book_id):
-    data = load_data()
-    original_count = len(data["books"])
-    data["books"] = [book for book in data["books"] if book["id"] != book_id]
-    if len(data["books"]) < original_count:
-        save_data(data)
-        return True
-    return False
-def load_data():
-    try:
-        with open(DATABASE_FILE, 'r') as file:
-            return json.load(file) 
-    except FileNotFoundError:
-        return {"books": []}
-    except json.JSONDecodeError:
-        return {"books": []}
-
-def save_data(data):
-    try:
-        with open(DATABASE_FILE, 'w') as file:
-            json.dump(data, file, indent=4)
-    except Exception as e:
-        print(f"Error saving data: {e}")
-
-def add_book(book_title):
-    data = load_data()
-    book_id = len(data["books"]) + 1
-    book = {
-        "id": book_id,
-        "title": book_title,
-        "reviews": []
-    }
-    data["books"].append(book)
-    save_data(data)
-    return book
-
-def add_review(book_id, rating, note):
-    data = load_data()
-    for book in data["books"]:
-        if book["id"] == book_id:
-            review_id = len(book["reviews"]) + 1
-            review = {
-                "review_id": review_id,
-                "rating": rating,
-                "note": note
-            }
-            book["reviews"].append(review)
-            save_data(data)
-            return review
-    return None
-
-def get_book(book_id):
-    data = load_data()
-    for book in data["books"]:
-        if book["id"] == book_id:
-            return book
-    return None
-
-def delete_book(book_id):
-    data = load_data()
-    original_count = len(data["books"])
-    data["books"] = [book for book in data["books"] if book["id"] != book_id]
-    if len(data["books"]) < original_count:
-        save_data(data)
-        return True
-    return False
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM reviews WHERE book_id = ?", (book_id,))
+    cursor.execute("DELETE FROM books WHERE id = ?", (book_id,))
+    conn.commit()
+    conn.close()
+    return {"message": f"Book with ID {book_id} deleted"}
 
 def update_book(book_id, book_title):
     data = load_data()
@@ -154,3 +116,27 @@ def update_review(book_id, review_id, rating, note):
                 print(f"  Review ID: {review['review_id']} | Rating: {review['rating']} | Note: {review['note']}")
             return
     print("Book not found.")
+
+def add_review_to_db(book_id, rating, note):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO reviews (book_id, rating, note) VALUES (?, ?, ?)",
+        (book_id, rating, note)
+    )
+    # Optionally, update the reviews_count in books
+    cursor.execute(
+        "UPDATE books SET reviews_count = reviews_count + 1 WHERE id = ?",
+        (book_id,)
+    )
+    conn.commit()
+    conn.close()
+    return {"message": "Review added successfully"}
+
+
+# Initialize the database when the script runs
+if __name__ == "__main__":
+    initialize_database()
+
+
+

@@ -111,6 +111,18 @@ def get_books_by_genre():
         return jsonify({"message": f"No books found in the '{genre}' genre."}), 404
     return jsonify(filtered_books), 200
 
+@app.route('/books/<int:book_id>/reviews', methods=['POST'])
+def add_review(book_id):
+    data = request.json
+    rating = data.get('rating')
+    note = data.get('note')
+
+    if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
+        return jsonify({"error": "Rating must be an integer between 1 and 5"}), 400
+
+    response = add_review_to_db(book_id, rating, note)
+    return jsonify(response), 201
+
 #TV shows Endpoints
 @app.route('/tv_shows', methods = ['GET'])
 def get_tv_shows():
