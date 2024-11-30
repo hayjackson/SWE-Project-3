@@ -1,95 +1,88 @@
 # Core Backend Functioning of movie tab of the review app
 # Author: Aditi Jha
-# Date: November 01, 2024
+# Date: November 01, 2024, updated november 22, 2024
 
-import json
-import os
+from movies_db import get_connection
 
-# JSON file to store data
-DATABASE_FILE = 'movie_reviews.json'
-
-# Loading data from the JSON file
-def load_data():
-    if os.path.exists(DATABASE_FILE):
-        with open(DATABASE_FILE, 'r') as file:
-            return json.load(file)
-    return {"movies": []}
-
-# Saving data to the JSON file
-def save_data(data):
-    with open(DATABASE_FILE, 'w') as file:
-        json.dump(data, file, indent=4)
-
-# Adding a new movie
-def add_movie(movie_name):
-    data = load_data()
-    movie = {
-        "id": len(data["movies"]) + 1,
-        "name": movie_name,
-        "reviews": []
-    }
-    data["movies"].append(movie)
-    save_data(data)
-    return {"message": f"Movie '{movie_name}' added successfully.", "movie": movie}
+# Adding a new movie with genre
+def add_movie(movie_name, genre):
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "INSERT INTO movies (name, genre) VALUES (%s, %s)"
+    cursor.execute(query, (movie_name, genre))
+    connection.commit()
+    movie_id = cursor.lastrowid
+    connection.close()
+    return {"message": f"Movie '{movie_name}' added successfully.", "movie": {"id": movie_id, "name": movie_name, "genre": genre}}
 
 # Adding a review to a movie
 def add_review(movie_id, rating, note):
-    data = load_data()
-    for movie in data["movies"]:
-        if movie["id"] == movie_id:
-            review_id = len(movie["reviews"]) + 1
-            review = {
-                "review_id": review_id,
-                "rating": rating,
-                "note": note
-            }
-            movie["reviews"].append(review)
-            save_data(data)
-            return {"message": f"Review added to movie ID {movie_id}.", "review": review}
-    return {"error": "Movie not found."}
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "INSERT INTO reviews (movie_id, rating, note) VALUES (%s, %s, %s)"
+    cursor.execute(query, (movie_id, rating, note))
+    connection.commit()
+    review_id = cursor.lastrowid
+    connection.close()
+    return {"message": f"Review added to movie ID {movie_id}.", "review": {"review_id": review_id, "rating": rating, "note": note}}
 
-# Editing an existing review
+# Editing a review
 def edit_review(movie_id, review_id, rating=None, note=None):
-    data = load_data()
-    for movie in data["movies"]:
-        if movie["id"] == movie_id:
-            for review in movie["reviews"]:
-                if review["review_id"] == review_id:
-                    if rating is not None:
-                        review["rating"] = rating
-                    if note is not None:
-                        review["note"] = note
-                    save_data(data)
-                    return {"message": f"Review ID {review_id} for movie ID {movie_id} updated.", "review": review}
-            return {"error": "Review not found."}
-    return {"error": "Movie not found."}
+    connection = get_connection()
+    cursor = connection.cursor()
+    updates = []
+    values = []
+
+    if rating is not None:
+        updates.append("rating = %s")
+        values.append(rating)
+    if note is not None:
+        updates.append("note = %s")
+        values.append(note)
+    values.extend([movie_id, review_id])
+
+    query = f"UPDATE reviews SET {', '.join(updates)} WHERE movie_id = %s AND id = %s"
+    cursor.execute(query, tuple(values))
+    connection.commit()
+    connection.close()
+    return {"message": f"Review ID {review_id} for movie ID {movie_id} updated."}
 
 # Deleting a review
 def delete_review(movie_id, review_id):
-    data = load_data()
-    for movie in data["movies"]:
-        if movie["id"] == movie_id:
-            movie["reviews"] = [review for review in movie["reviews"] if review["review_id"] != review_id]
-            save_data(data)
-            return {"message": f"Review ID {review_id} deleted from movie ID {movie_id}."}
-    return {"error": "Movie or review not found."}
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "DELETE FROM reviews WHERE movie_id = %s AND id = %s"
+    cursor.execute(query, (movie_id, review_id))
+    connection.commit()
+    connection.close()
+    return {"message": f"Review ID {review_id} deleted from movie ID {movie_id}."}
 
-# Deleting a movie and its associated reviews
+# Deleting a movie
 def delete_movie(movie_id):
-    data = load_data()
-    data["movies"] = [movie for movie in data["movies"] if movie["id"] != movie_id]
-    save_data(data)
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "DELETE FROM movies WHERE id = %s"
+    cursor.execute(query, (movie_id,))
+    connection.commit()
+    connection.close()
     return {"message": f"Movie ID {movie_id} and its reviews have been deleted."}
 
-# Viewing all reviews
-def view_reviews():
-    data = load_data()
-    return data
+# Viewing all movies
+def view_movies():
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM movies"
+    cursor.execute(query)
+    movies = cursor.fetchall()
+    connection.close()
+    return movies
 
-# Searching and filter reviews by movie ID
-def search_reviews(movie_id):
-    data = load_data()
-    for movie in data["movies"]:
-        if movie["id"] == movie_id:
-            return movie
-    return {"error": "Movie not found."}
+# Searching movies by genre
+def search_movies_by_genre(genre):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM movies WHERE genre = %s"
+    cursor.execute(query, (genre,))
+    movies = cursor.fetchall()
+    connection.close()
+    return movies
