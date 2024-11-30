@@ -15,15 +15,16 @@ def not_found(error):
     return jsonify({"title": "404 Not Found", "message": "The requested URL was not found on the server."}), 404
 
 # Movies Endpoints, by Aditi, November 29, 2024
+
 @app.route('/movies', methods=['POST'])
 def add_movie():
-    print("POST /movies endpoint hit")
     data = request.get_json()
     movie_name = data.get("name")
-    if movie_name:
-        result = movies.add_movie(movie_name)
-        return jsonify(result), 201
-    return jsonify({"error": "Movie name is required"}), 400
+    genre = data.get("genre")
+    if not movie_name or not genre:
+        return jsonify({"error": "Movie name and genre are required"}), 400
+    result = movies.add_movie(movie_name, genre)
+    return jsonify(result), 201
 
 @app.route('/movies/<int:movie_id>/reviews', methods=['POST'])
 def add_review(movie_id):
@@ -54,14 +55,26 @@ def delete_movie(movie_id):
     return jsonify(result)
 
 @app.route('/movies', methods=['GET'])
-def view_reviews():
-    all_reviews = movies.load_data()["movies"]
-    return jsonify(all_reviews)
+def view_movies():
+    all_movies = movies.view_movies()
+    return jsonify({"message": "All movies retrieved", "movies": all_movies}), 200
 
-@app.route('/movies/<int:movie_id>/reviews', methods=['GET'])
-def search_reviews(movie_id):
-    result = movies.search_reviews(movie_id)
-    return jsonify(result), 200 if "error" not in result else 404
+
+@app.route('/movies/genre/<string:genre>', methods=['GET'])
+def search_movies_by_genre(genre):
+    result = movies.search_movies_by_genre(genre)
+    if result:
+        return jsonify({"message": f"Movies in genre '{genre}'", "movies": result}), 200
+    return jsonify({"error": f"No movies found in genre '{genre}'"}), 404
+
+@app.route('/movies/<int:movie_id>', methods=['GET'])
+def search_movie_by_id(movie_id):
+    result = movies.search_movie_by_id(movie_id)
+    if "error" in result:
+        return jsonify(result), 404
+    return jsonify(result), 200
+
+
 
 # Books Endpoints
 @app.route('/books', methods=['GET'])
