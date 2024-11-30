@@ -86,3 +86,15 @@ def search_movies_by_genre(genre):
     movies = cursor.fetchall()
     connection.close()
     return movies
+
+# Searching a movie by ID
+def search_movie_by_id(movie_id):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM movies WHERE id = %s"
+    cursor.execute(query, (movie_id,))
+    movie = cursor.fetchone()
+    connection.close()
+    if movie:
+        return {"message": "Movie found.", "movie": movie}
+    return {"error": f"Movie with ID {movie_id} not found."}
