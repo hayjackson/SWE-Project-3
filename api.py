@@ -1,19 +1,20 @@
 # Author: Aditi Jha, November 4, 2024
-# Implementing REST API for my movie tab for our review app.
 
 from flask import Flask, jsonify, request
 import movies
-import books  # Importing both modules
+import books  
 import tv_shows
 
 app = Flask(__name__)
+
+# Implementing REST API for my movie tab for our review app.
 
 # Custom 404 Error Handler to Return JSON Response
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"title": "404 Not Found", "message": "The requested URL was not found on the server."}), 404
 
-# Movies Endpoints
+# Movies Endpoints, by Aditi, November 29, 2024
 @app.route('/movies', methods=['POST'])
 def add_movie():
     print("POST /movies endpoint hit")
