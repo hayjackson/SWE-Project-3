@@ -15,8 +15,8 @@ def not_found(error):
     return jsonify({"title": "404 Not Found", "message": "The requested URL was not found on the server."}), 404
 
 
-
-@app.route('/home')
+#Keith Young 12/2/24  12:24 PM
+@app.route('/')
 def home():
     return render_template('home_page.html')
 
