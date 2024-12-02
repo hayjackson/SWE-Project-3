@@ -1,6 +1,6 @@
 # Author: Aditi Jha, November 4, 2024
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import movies
 import books  
 import tv_shows
@@ -13,6 +13,12 @@ app = Flask(__name__)
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"title": "404 Not Found", "message": "The requested URL was not found on the server."}), 404
+
+
+
+@app.route('/home')
+def home():
+    return render_template('home_page.html')
 
 # Movies Endpoints, by Aditi, November 29, 2024
 
