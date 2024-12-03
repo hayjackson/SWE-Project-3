@@ -7,33 +7,24 @@ import tv_shows
 
 app = Flask(__name__)
 
-# Implementing REST API for my movie tab for our review app.
-
-# Custom 404 Error Handler to Return JSON Response
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"title": "404 Not Found", "message": "The requested URL was not found on the server."}), 404
-
-# Movies Endpoints, by Aditi, November 29, 2024
+# Implementing REST API for my movie tab for our review app, author: Aditi, updated december 2, 2024
 
 @app.route('/movies', methods=['POST'])
 def add_movie():
     data = request.get_json()
-    movie_name = data.get("name")
+    name = data.get("name")
     genre = data.get("genre")
-    if not movie_name or not genre:
-        return jsonify({"error": "Movie name and genre are required"}), 400
-    result = movies.add_movie(movie_name, genre)
-    return jsonify(result), 201
+    if name and genre:
+        return jsonify(movies.add_movie(name, genre)), 201
+    return jsonify({"error": "Movie name and genre are required"}), 400
 
 @app.route('/movies/<int:movie_id>/reviews', methods=['POST'])
 def add_review(movie_id):
     data = request.get_json()
     rating = data.get("rating")
     note = data.get("note")
-    if rating is not None and note:
-        result = movies.add_review(movie_id, rating, note)
-        return jsonify(result), 201 if "error" not in result else 404
+    if rating and note:
+        return jsonify(movies.add_review(movie_id, rating, note)), 201
     return jsonify({"error": "Rating and note are required"}), 400
 
 @app.route('/movies/<int:movie_id>/reviews/<int:review_id>', methods=['PUT'])
@@ -41,38 +32,39 @@ def edit_review(movie_id, review_id):
     data = request.get_json()
     rating = data.get("rating")
     note = data.get("note")
-    result = movies.edit_review(movie_id, review_id, rating, note)
-    return jsonify(result)
+    return jsonify(movies.edit_review(movie_id, review_id, rating, note))
 
 @app.route('/movies/<int:movie_id>/reviews/<int:review_id>', methods=['DELETE'])
 def delete_review(movie_id, review_id):
-    result = movies.delete_review(movie_id, review_id)
-    return jsonify(result)
+    return jsonify(movies.delete_review(movie_id, review_id))
 
 @app.route('/movies/<int:movie_id>', methods=['DELETE'])
 def delete_movie(movie_id):
-    result = movies.delete_movie(movie_id)
-    return jsonify(result)
+    return jsonify(movies.delete_movie(movie_id))
 
 @app.route('/movies', methods=['GET'])
-def view_movies():
-    all_movies = movies.view_movies()
-    return jsonify({"message": "All movies retrieved", "movies": all_movies}), 200
+def view_reviews():
+    return jsonify(movies.view_reviews())
+
+@app.route('/movies/<int:movie_id>/reviews', methods=['GET'])
+def search_reviews(movie_id):
+    return jsonify(movies.search_reviews(movie_id))
 
 
-@app.route('/movies/genre/<string:genre>', methods=['GET'])
-def search_movies_by_genre(genre):
-    result = movies.search_movies_by_genre(genre)
-    if result:
-        return jsonify({"message": f"Movies in genre '{genre}'", "movies": result}), 200
-    return jsonify({"error": f"No movies found in genre '{genre}'"}), 404
+@app.route('/movies/genre', methods=['GET'])
+def search_by_genre():
+    genre = request.args.get("genre")
+    if not genre:
+        return jsonify({"error": "Genre is required"}), 400
+    try:
+        result = movies.search_by_genre(genre)
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "An error occurred while searching by genre."}), 500
+    
 
-@app.route('/movies/<int:movie_id>', methods=['GET'])
-def search_movie_by_id(movie_id):
-    result = movies.search_movie_by_id(movie_id)
-    if "error" in result:
-        return jsonify(result), 404
-    return jsonify(result), 200
+
 
 
 
@@ -136,6 +128,9 @@ def add_review(book_id):
 
     response = add_review_to_db(book_id, rating, note)
     return jsonify(response), 201
+
+
+
 
 #TV shows Endpoints
 @app.route('/tv_shows', methods = ['GET'])
