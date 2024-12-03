@@ -1,53 +1,156 @@
 import gradio as gr
 import requests
 
-# API Base URL
-API_BASE_URL = "http://127.0.0.1:5000"
+# Base URL of the Flask API
+BASE_URL = "http://127.0.0.1:5000"
 
-# Movie Functions
+# Functions to interact with the API
 
-def add_movie(name):
-    response = requests.post(f"{API_BASE_URL}/movies", json={"name": name})
-    if response.status_code == 201:
-        return response.json().get("message", "✅ Movie added successfully!")
-    return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
 
-def view_movies():
-    response = requests.get(f"{API_BASE_URL}/movies")
-    if response.status_code == 200:
-        movies = response.json()
-        return "\n".join([f"ID: {movie['id']} | Name: {movie['name']}" for movie in movies])
-    return "Failed to fetch movies."
+# First: Movie Tab functions, Aditi, Dec 2
 
-def view_movie_reviews(movie_id):
-    response = requests.get(f"{API_BASE_URL}/movies/{movie_id}/reviews")
-    if response.status_code == 200:
-        movie = response.json()
-        reviews = movie.get("reviews", [])
-        if reviews:
-            return "\n".join(
-                [f"Review ID: {review['review_id']} | Rating: {review['rating']} | Note: {review['note']}" for review in reviews]
-            )
-        return "No reviews found for this movie."
-    return response.json().get("error", "Error fetching reviews.")
+# Adding a movie
+def add_movie_frontend(movie_name, genre):
+    # Aditi, dec 2, 2024
+    if not movie_name.strip():
+        return "❌ Error: Movie name cannot be empty!"
+    if not genre.strip():
+        return "❌ Error: Genre cannot be empty!"
+    try:
+        response = requests.post(f"{BASE_URL}/movies", json={"name": movie_name, "genre": genre})
+        if response.status_code == 201:
+            return response.json().get("message", "✅ Movie added successfully!")
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
 
-def add_movie_review(movie_id, rating, note):
-    response = requests.post(f"{API_BASE_URL}/movies/{movie_id}/reviews", json={"rating": rating, "note": note})
-    if response.status_code == 201:
-        return response.json()["message"]
-    return response.json()["error"]
+# Adding a review to a movie
+def add_review_frontend(movie_id, rating, note):
+    # Aditi, Dec 2, 2024
+    if not movie_id.isdigit():
+        return "❌ Error: Movie ID must be an integer!"
+    if not (0 <= float(rating) <= 5):
+        return "❌ Error: Rating must be between 0 and 5!"
+    if not note.strip():
+        return "❌ Error: Review note cannot be empty!"
+    try:
+        response = requests.post(
+            f"{BASE_URL}/movies/{movie_id}/reviews",
+            json={"rating": float(rating), "note": note},
+        )
+        if response.status_code == 201:
+            return response.json().get("message", "✅ Review added successfully!")
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
 
-def delete_movie(movie_id):
-    response = requests.delete(f"{API_BASE_URL}/movies/{movie_id}")
-    if response.status_code == 200:
-        return response.json()["message"]
-    return response.json()["error"]
+# Editing a review
+def edit_review_frontend(movie_id, review_id, rating, note):
+    # Aditi, Dec 2, 2024
+    if not movie_id.isdigit() or not review_id.isdigit():
+        return "❌ Error: Both Movie ID and Review ID must be integers!"
+    try:
+        response = requests.put(
+            f"{BASE_URL}/movies/{movie_id}/reviews/{review_id}",
+            json={"rating": float(rating), "note": note},
+        )
+        return response.json().get("message", "✅ Review updated successfully!")
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
 
-def delete_movie_review(movie_id, review_id):
-    response = requests.delete(f"{API_BASE_URL}/movies/{movie_id}/reviews/{review_id}")
-    if response.status_code == 200:
-        return response.json()["message"]
-    return response.json()["error"]
+# Deleting a review
+def delete_review_frontend(movie_id, review_id):
+    # Aditi, Dec 2, 2024
+    if not movie_id.isdigit() or not review_id.isdigit():
+        return "❌ Error: Both Movie ID and Review ID must be integers!"
+    try:
+        response = requests.delete(f"{BASE_URL}/movies/{movie_id}/reviews/{review_id}")
+        return response.json().get("message", "✅ Review deleted successfully!")
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+# Deleting a movie
+def delete_movie_frontend(movie_id):
+    # Aditi, Dec 2, 2024
+    if not movie_id.isdigit():
+        return "❌ Error: Movie ID must be an integer!"
+    try:
+        response = requests.delete(f"{BASE_URL}/movies/{movie_id}")
+        return response.json().get("message", "✅ Movie deleted successfully!")
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+
+# Searching by genre
+def search_by_genre_frontend(genre):
+    # Aditi, Dec 2, 2024
+    if not genre.strip():
+        return "❌ Error: Genre cannot be empty!"
+    try:
+        response = requests.get(f"{BASE_URL}/movies/genre", params={"genre": genre})
+        if response.status_code == 200:
+            movies = response.json()
+            if not movies:
+                return f"🎥 No movies found under genre '{genre}'."
+            output = [f"🎥 Movies under genre '{genre}':"]
+            for movie in movies:
+                output.append(f"Movie #{movie['id']}: {movie['name']}")
+            return "\n".join(output)
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+
+# Viewing all movies
+def view_movies_frontend():
+    # Aditi, Dec 2, 2024
+    try:
+        response = requests.get(f"{BASE_URL}/movies")
+        if response.status_code == 200:
+            movies = response.json()
+            if not movies:
+                return "🎥 No movies found. Add some to get started!"
+            output = ["🎥 Movie List:"]
+            for movie in movies:
+                output.append(f"Movie #{movie['id']}: {movie['name']} (Genre: {movie['genre']})")
+                if not movie["reviews"]:
+                    output.append("   No reviews yet.")
+                else:
+                    for review in movie["reviews"]:
+                        output.append(
+                            f"   Review #{review['review_id']} | Rating: {review['rating']}/5 | {review['note']}"
+                        )
+            return "\n".join(output)
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+# Searching reviews by movie ID
+def search_reviews_frontend(movie_id):
+    # Aditi, Dec 2, 2024
+    if not movie_id.isdigit():
+        return "❌ Error: Movie ID must be an integer!"
+    try:
+        response = requests.get(f"{BASE_URL}/movies/{movie_id}/reviews")
+        if response.status_code == 200:
+            movie = response.json()
+            output = [f"🎥 Movie: {movie['name']} (Genre: {movie['genre']})"]
+            if not movie["reviews"]:
+                output.append("   No reviews yet.")
+            else:
+                for review in movie["reviews"]:
+                    output.append(
+                        f"   Review #{review['review_id']} | Rating: {review['rating']}/5 | {review['note']}"
+                    )
+            return "\n".join(output)
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+    
+
+
+
+
 
 # Book Functions
 
@@ -94,64 +197,84 @@ def delete_book_review(book_id, review_id):
         return response.json()["message"]
     return response.json()["error"]
 
+
+
+
 # Gradio Interface
+
+# First: Movies tab:
 with gr.Blocks() as demo:
-    gr.Markdown("# 🎥 Movie & 📚 Book Manager with Reviews")
+    gr.Markdown("# 🎥 Movie Review App")
 
-    with gr.Tab("Movies"):
+    with gr.Tab("Add a Movie"):
+        movie_name_input = gr.Textbox(label="Movie Name", placeholder="Enter movie name...")
+        genre_input = gr.Textbox(label="Genre", placeholder="Enter movie genre...")
+        movie_add_btn = gr.Button("Add Movie")
+        movie_output = gr.Textbox(label="Status")
+        movie_add_btn.click(add_movie_frontend, inputs=[movie_name_input, genre_input], outputs=movie_output)
+
+    with gr.Tab("Add a Review"):
+        movie_id_input = gr.Textbox(label="Movie ID", placeholder="Enter movie ID...")
+        rating_input = gr.Slider(0, 5, step=0.5, label="Rating")
+        review_note_input = gr.Textbox(label="Review Note", placeholder="Write your review...")
+        review_add_btn = gr.Button("Add Review")
+        review_output = gr.Textbox(label="Status")
+        review_add_btn.click(
+            add_review_frontend,
+            inputs=[movie_id_input, rating_input, review_note_input],
+            outputs=review_output,
+        )
+
+    with gr.Tab("Edit a Review"):
+        edit_movie_id_input = gr.Textbox(label="Movie ID", placeholder="Enter movie ID...")
+        edit_review_id_input = gr.Textbox(label="Review ID", placeholder="Enter review ID...")
+        edit_rating_input = gr.Slider(0, 5, step=0.5, label="New Rating")
+        edit_review_note_input = gr.Textbox(label="New Review Note", placeholder="Update your review...")
+        edit_review_btn = gr.Button("Edit Review")
+        edit_review_output = gr.Textbox(label="Status")
+        edit_review_btn.click(
+            edit_review_frontend,
+            inputs=[edit_movie_id_input, edit_review_id_input, edit_rating_input, edit_review_note_input],
+            outputs=edit_review_output,
+        )
+
+    with gr.Tab("Delete a Movie"):
+        del_movie_input = gr.Textbox(label="Delete Movie ID", placeholder="Enter movie ID...")
+        del_movie_btn = gr.Button("Delete Movie")
+        del_movie_output = gr.Textbox(label="Status")
+        del_movie_btn.click(delete_movie_frontend, inputs=del_movie_input, outputs=del_movie_output)
+
+    with gr.Tab("Delete a Review"):
+        del_movie_id_input = gr.Textbox(label="Movie ID", placeholder="Enter movie ID...")
+        del_review_id_input = gr.Textbox(label="Review ID", placeholder="Enter review ID...")
+        del_review_btn = gr.Button("Delete Review")
+        del_review_output = gr.Textbox(label="Status")
+        del_review_btn.click(
+            delete_review_frontend,
+            inputs=[del_movie_id_input, del_review_id_input],
+            outputs=del_review_output,
+        )
+
+    with gr.Tab("Search by Genre"):
+        genre_search_input = gr.Textbox(label="Genre", placeholder="Enter genre to search...")
+        genre_search_btn = gr.Button("Search by Genre")
+        genre_search_output = gr.Textbox(label="Movies by Genre", interactive=False)
+        genre_search_btn.click(search_by_genre_frontend, inputs=genre_search_input, outputs=genre_search_output)
+
+    with gr.Tab("Search Reviews by Movie ID"):
+        search_movie_id_input = gr.Textbox(label="Movie ID", placeholder="Enter movie ID...")
+        search_reviews_btn = gr.Button("Search Reviews")
+        search_reviews_output = gr.Textbox(label="Reviews", interactive=False)
+        search_reviews_btn.click(search_reviews_frontend, inputs=search_movie_id_input, outputs=search_reviews_output)
+
+    with gr.Tab("View Movies"):
+        view_movies_btn = gr.Button("View All Movies")
+        movies_display = gr.Textbox(label="Movie List", interactive=False)
+        view_movies_btn.click(view_movies_frontend, inputs=[], outputs=movies_display)
+
+
+
         
-        # Add Movie
-        with gr.Row():
-            gr.Markdown("## Add a Movie")
-            movie_name_input = gr.Textbox(label="Movie Name", placeholder="Enter movie name...")
-            movie_add_button = gr.Button("Add Movie")
-            movie_output = gr.Textbox(label="Status")
-            movie_add_button.click(add_movie, inputs=movie_name_input, outputs=movie_output)
-
-        # View Movies
-        with gr.Row():
-            gr.Markdown("## View Movies")
-            view_movies_button = gr.Button("View Movies")
-            movies_output = gr.Textbox(label="Movie List")
-            view_movies_button.click(view_movies, outputs=movies_output)
-
-        # Add Movie Review
-        with gr.Row():
-            movie_id_input = gr.Number(label="Movie ID", value=1)
-            movie_rating_input = gr.Slider(label="Rating", minimum=1, maximum=5, step=0.5)
-            movie_note_input = gr.Textbox(label="Review Note", placeholder="Write your review...")
-            movie_review_button = gr.Button("Add Review")
-            review_output = gr.Textbox(label="Status")
-            movie_review_button.click(
-                add_movie_review, inputs=[movie_id_input, movie_rating_input, movie_note_input], outputs=review_output
-            )
-
-        # View Movie Reviews
-        with gr.Row():
-            gr.Markdown("## View Reviews")
-            view_reviews_movie_id_input = gr.Number(label="Movie ID", value=1)
-            view_movie_reviews_button = gr.Button("View Reviews")
-            movie_reviews_output = gr.Textbox(label="Movie Reviews")
-            view_movie_reviews_button.click(
-                view_movie_reviews, inputs=view_reviews_movie_id_input, outputs=movie_reviews_output
-            )
-
-        # Delete Movie
-        with gr.Row():
-            delete_movie_id_input = gr.Number(label="Movie ID to Delete", value=1)
-            delete_movie_button = gr.Button("Delete Movie")
-            delete_movie_output = gr.Textbox(label="Status")
-            delete_movie_button.click(delete_movie, inputs=delete_movie_id_input, outputs=delete_movie_output)
-
-        # Delete Movie Review
-        with gr.Row():
-            delete_movie_review_id_input = gr.Number(label="Movie ID", value=1)
-            delete_review_id_input = gr.Number(label="Review ID to Delete", value=1)
-            delete_review_button = gr.Button("Delete Review")
-            delete_review_output = gr.Textbox(label="Status")
-            delete_review_button.click(
-                delete_movie_review, inputs=[delete_movie_review_id_input, delete_review_id_input], outputs=delete_review_output
-            )
 
     with gr.Tab("Books"):
         
