@@ -3,177 +3,133 @@
 # Unit Tests for testing movies tab features
 
 import unittest
-from unittest.mock import patch, MagicMock
-from movies import add_movie, add_review, edit_review, delete_review, delete_movie, view_movies, search_movies_by_genre, search_movie_by_id
+import sqlite3
+import movies
 
+# Creating a temporary database for testing
+TEST_DATABASE = 'test_movie_reviews.db'
 
 class TestMovies(unittest.TestCase):
-    @patch("movies.get_connection")
-    def test_add_movie(self, mock_get_connection):
-        # Mocking database connection and cursor
-        mock_conn = MagicMock()
-        mock_cursor = mock_conn.cursor.return_value
-        mock_get_connection.return_value = mock_conn
 
-        # Mocking cursor behavior for lastrowid
-        mock_cursor.lastrowid = 1
-
-        # Calling the function
-        result = add_movie("Inception", "Sci-Fi")
-
-        # Assertions
-        mock_cursor.execute.assert_called_once_with(
-            "INSERT INTO movies (name, genre) VALUES (%s, %s)", ("Inception", "Sci-Fi")
-        )
-        mock_conn.commit.assert_called_once()
-        self.assertEqual(result, {
-            "message": "Movie 'Inception' added successfully.",
-            "movie": {"id": 1, "name": "Inception", "genre": "Sci-Fi"}
-        })
-
-    @patch("movies.get_connection")
-    def test_add_review(self, mock_get_connection):
-        # Mocking database connection and cursor
-        mock_conn = MagicMock()
-        mock_cursor = mock_conn.cursor.return_value
-        mock_get_connection.return_value = mock_conn
-
-        # Mocking cursor behavior for lastrowid
-        mock_cursor.lastrowid = 5
-
-        # Calling the function
-        result = add_review(1, 4.5, "Great movie!")
-
-        # Assertions
-        mock_cursor.execute.assert_called_once_with(
-            "INSERT INTO reviews (movie_id, rating, note) VALUES (%s, %s, %s)", (1, 4.5, "Great movie!")
-        )
-        mock_conn.commit.assert_called_once()
-        self.assertEqual(result, {
-            "message": "Review added to movie ID 1.",
-            "review": {"review_id": 5, "rating": 4.5, "note": "Great movie!"}
-        })
-
-    @patch("movies.get_connection")
-    def test_edit_review(self, mock_get_connection):
-        # Mocking database connection and cursor
-        mock_conn = MagicMock()
-        mock_cursor = mock_conn.cursor.return_value
-        mock_get_connection.return_value = mock_conn
-
-        # Calling the function
-        result = edit_review(1, 5, rating=4.0, note="Updated review")
-
-        # Assertions
-        mock_cursor.execute.assert_called_once_with(
-            "UPDATE reviews SET rating = %s, note = %s WHERE movie_id = %s AND id = %s",
-            (4.0, "Updated review", 1, 5)
-        )
-        mock_conn.commit.assert_called_once()
-        self.assertEqual(result, {"message": "Review ID 5 for movie ID 1 updated."})
-
-    @patch("movies.get_connection")
-    def test_delete_review(self, mock_get_connection):
-        # Mocking database connection and cursor
-        mock_conn = MagicMock()
-        mock_cursor = mock_conn.cursor.return_value
-        mock_get_connection.return_value = mock_conn
-
-        # Calling the function
-        result = delete_review(1, 5)
-
-        # Assertions
-        mock_cursor.execute.assert_called_once_with(
-            "DELETE FROM reviews WHERE movie_id = %s AND id = %s", (1, 5)
-        )
-        mock_conn.commit.assert_called_once()
-        self.assertEqual(result, {"message": "Review ID 5 deleted from movie ID 1."})
-
-    @patch("movies.get_connection")
-    def test_delete_movie(self, mock_get_connection):
-        # Mocking database connection and cursor
-        mock_conn = MagicMock()
-        mock_cursor = mock_conn.cursor.return_value
-        mock_get_connection.return_value = mock_conn
-
-        # Calling the function
-        result = delete_movie(1)
-
-        # Assertions
-        mock_cursor.execute.assert_called_once_with(
-            "DELETE FROM movies WHERE id = %s", (1,)
-        )
-        mock_conn.commit.assert_called_once()
-        self.assertEqual(result, {"message": "Movie ID 1 and its reviews have been deleted."})
-
-    @patch("movies.get_connection")
-    def test_view_movies(self, mock_get_connection):
-        # Mocking database connection and cursor
-        mock_conn = MagicMock()
-        mock_cursor = mock_conn.cursor.return_value
-        mock_get_connection.return_value = mock_conn
-
-        # Mocking database response
-        mock_cursor.fetchall.return_value = [
-            {"id": 1, "name": "Inception", "genre": "Sci-Fi"},
-            {"id": 2, "name": "The Matrix", "genre": "Action"}
-        ]
-
-        # Calling the function
-        result = view_movies()
-
-        # Assertions
-        mock_cursor.execute.assert_called_once_with("SELECT * FROM movies")
-        self.assertEqual(result, [
-            {"id": 1, "name": "Inception", "genre": "Sci-Fi"},
-            {"id": 2, "name": "The Matrix", "genre": "Action"}
-        ])
-
+    def setUp(self):
+        """Setting up a test database and tables before each test."""
+        self.conn = sqlite3.connect(TEST_DATABASE)
+        self.cursor = self.conn.cursor()
         
-    @patch("movies.get_connection")
-    def test_search_movies_by_genre(self, mock_get_connection):
-        # Mocking database connection and cursor
-        mock_conn = MagicMock()
-        mock_cursor = mock_conn.cursor.return_value
-        mock_get_connection.return_value = mock_conn
+        # Creating tables
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS movies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                genre TEXT NOT NULL
+            )
+        ''')
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                movie_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL,
+                note TEXT NOT NULL,
+                FOREIGN KEY (movie_id) REFERENCES movies (id)
+            )
+        ''')
+        self.conn.commit()
 
-        # Mocking database response
-        mock_cursor.fetchall.return_value = [
-            {"id": 1, "name": "Inception", "genre": "Sci-Fi"}
-        ]
+        # Using test database for all operations
+        movies.DATABASE = TEST_DATABASE
 
-        # Calling the function
-        result = search_movies_by_genre("Sci-Fi")
+    def tearDown(self):
+        """Cleaning up the database after each test."""
+        self.cursor.execute('DROP TABLE IF EXISTS reviews')
+        self.cursor.execute('DROP TABLE IF EXISTS movies')
+        self.conn.commit()
+        self.conn.close()
 
-        # Assertions
-        mock_cursor.execute.assert_called_once_with("SELECT * FROM movies WHERE genre = %s", ("Sci-Fi",))
-        self.assertEqual(result, [{"id": 1, "name": "Inception", "genre": "Sci-Fi"}])
+    def test_add_movie(self):
+        """Testing adding a movie to the database."""
+        response = movies.add_movie("Inception", "Science Fiction")
+        self.cursor.execute('SELECT * FROM movies WHERE name = ?', ("Inception",))
+        movie = self.cursor.fetchone()
+        self.assertIsNotNone(movie)
+        self.assertEqual(movie[1], "Inception")
+        self.assertEqual(movie[2], "Science Fiction")
+        self.assertEqual(response["message"], "Movie 'Inception' added successfully.")
 
-    @patch("movies.get_connection")
-    def test_search_movie_by_id(self, mock_get_connection):
-        mock_conn = MagicMock()
-        mock_cursor = mock_conn.cursor.return_value
-        mock_get_connection.return_value = mock_conn
+    def test_add_review(self):
+        """Testing adding a review to a movie."""
+        movies.add_movie("Inception", "Science Fiction")
+        response = movies.add_review(1, 5, "Amazing movie!")
+        self.cursor.execute('SELECT * FROM reviews WHERE movie_id = ?', (1,))
+        review = self.cursor.fetchone()
+        self.assertIsNotNone(review)
+        self.assertEqual(review[1], 1)
+        self.assertEqual(review[2], 5)
+        self.assertEqual(review[3], "Amazing movie!")
+        self.assertEqual(response["message"], "Review added to movie ID 1.")
 
-        # Mocking a valid movie response
-        mock_cursor.fetchone.return_value = {"id": 1, "name": "Inception", "genre": "Sci-Fi"}
+    def test_edit_review(self):
+        """Testing editing a review."""
+        movies.add_movie("Inception", "Science Fiction")
+        movies.add_review(1, 4, "Good movie")
+        response = movies.edit_review(1, 1, rating=5, note="Amazing movie!")
+        self.cursor.execute('SELECT * FROM reviews WHERE id = 1')
+        review = self.cursor.fetchone()
+        self.assertEqual(review[2], 5)
+        self.assertEqual(review[3], "Amazing movie!")
+        self.assertEqual(response["message"], "Review ID 1 for movie ID 1 updated.")
 
-        # Valid ID test
-        result = search_movie_by_id(1)
-        mock_cursor.execute.assert_called_once_with("SELECT * FROM movies WHERE id = %s", (1,))
-        self.assertEqual(result, {"message": "Movie found.", "movie": {"id": 1, "name": "Inception", "genre": "Sci-Fi"}})
+    def test_delete_review(self):
+        """Testing deleting a review."""
+        movies.add_movie("Inception", "Science Fiction")
+        movies.add_review(1, 5, "Amazing movie!")
+        response = movies.delete_review(1, 1)
+        self.cursor.execute('SELECT * FROM reviews WHERE id = 1')
+        review = self.cursor.fetchone()
+        self.assertIsNone(review)
+        self.assertEqual(response["message"], "Review ID 1 deleted from movie ID 1.")
 
-        # Resetting mocks for invalid ID test
-        mock_cursor.reset_mock()
-        mock_cursor.fetchone.return_value = None
+    def test_delete_movie(self):
+        """Testing deleting a movie and its reviews."""
+        movies.add_movie("Inception", "Science Fiction")
+        movies.add_review(1, 5, "Amazing movie!")
+        response = movies.delete_movie(1)
+        self.cursor.execute('SELECT * FROM movies WHERE id = 1')
+        movie = self.cursor.fetchone()
+        self.cursor.execute('SELECT * FROM reviews WHERE movie_id = 1')
+        review = self.cursor.fetchone()
+        self.assertIsNone(movie)
+        self.assertIsNone(review)
+        self.assertEqual(response["message"], "Movie ID 1 and its reviews have been deleted.")
 
-        # Invalid ID test
-        result = search_movie_by_id(99)
-        mock_cursor.execute.assert_called_once_with("SELECT * FROM movies WHERE id = %s", (99,))
-        self.assertEqual(result, {"error": "Movie with ID 99 not found."})
-    
-    
+    def test_view_reviews(self):
+        """Testing viewing all movies and their reviews."""
+        movies.add_movie("Inception", "Science Fiction")
+        movies.add_review(1, 5, "Amazing movie!")
+        response = movies.view_reviews()
+        self.assertEqual(len(response), 1)
+        self.assertEqual(response[0]["name"], "Inception")
+        self.assertEqual(response[0]["genre"], "Science Fiction")
+        self.assertEqual(len(response[0]["reviews"]), 1)
+        self.assertEqual(response[0]["reviews"][0]["note"], "Amazing movie!")
 
+    def test_search_reviews(self):
+        """Testing searching for reviews by movie ID."""
+        movies.add_movie("Inception", "Science Fiction")
+        movies.add_review(1, 5, "Amazing movie!")
+        response = movies.search_reviews(1)
+        self.assertEqual(response["name"], "Inception")
+        self.assertEqual(response["genre"], "Science Fiction")
+        self.assertEqual(len(response["reviews"]), 1)
+        self.assertEqual(response["reviews"][0]["rating"], 5)
 
-if __name__ == "__main__":
+    def test_search_by_genre(self):
+        """Testing searching for movies by genre."""
+        movies.add_movie("Inception", "Science Fiction")
+        movies.add_movie("Interstellar", "Science Fiction")
+        response = movies.search_by_genre("Science Fiction")
+        self.assertEqual(len(response), 2)
+        self.assertEqual(response[0]["name"], "Inception")
+        self.assertEqual(response[1]["name"], "Interstellar")
+
+if __name__ == '__main__':
     unittest.main()
