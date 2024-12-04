@@ -1,142 +1,112 @@
-# Book Tab of the review app
+# Core Backend Functioning of book tab of the review app
 # Author: Kai Francis
+# Date: Updated December 2, 2024
 
 import sqlite3
 
 DATABASE = 'books.db'
 
-def get_db_connection():
-    connection = sqlite3.connect(DATABASE)
-    connection.row_factory = sqlite3.Row  # Allows accessing rows like dictionaries
-    return connection
-
-# Create tables if they do not exist
-def initialize_database():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Create books table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS books (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            genre TEXT,
-            reviews_count INTEGER DEFAULT 0
-        )
-    ''')
-
-    # Create reviews table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            book_id INTEGER NOT NULL,
-            rating INTEGER NOT NULL,
-            note TEXT,
-            FOREIGN KEY (book_id) REFERENCES books (id)
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-# Add a new book
+# Adding a new book with genre
 def add_book(book_title, genre):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO books (title, genre) VALUES (?, ?)",
-        (book_title, genre)
-    )
-    conn.commit()
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "INSERT INTO books (title, genre) VALUES (%s, %s)"
+    cursor.execute(query, (book_title, genre))
+    connection.commit()
     book_id = cursor.lastrowid
-    conn.close()
-    return {"id": book_id, "title": book_title, "genre": genre}
+    connection.close()
+    return {"message": f"Book '{book_title}' added successfully.", "book": {"id": book_id, "title": book_title, "genre": genre}}
 
-# Add a review to a book
+# Adding a review to a book
 def add_review(book_id, rating, note):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO reviews (book_id, rating, note) VALUES (?, ?, ?)",
-        (book_id, rating, note)
-    )
-    # Update the reviews_count in the books table
-    cursor.execute(
-        "UPDATE books SET reviews_count = reviews_count + 1 WHERE id = ?",
-        (book_id,)
-    )
-    conn.commit()
-    conn.close()
-    return {"book_id": book_id, "rating": rating, "note": note}
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "INSERT INTO reviews (book_id, rating, note) VALUES (%s, %s, %s)"
+    cursor.execute(query, (book_id, rating, note))
+    # Optionally update the reviews_count in books
+    update_query = "UPDATE books SET reviews_count = reviews_count + 1 WHERE id = %s"
+    cursor.execute(update_query, (book_id,))
+    connection.commit()
+    review_id = cursor.lastrowid
+    connection.close()
+    return {"message": f"Review added to book ID {book_id}.", "review": {"review_id": review_id, "rating": rating, "note": note}}
 
-# Retrieve a specific book
-def get_book(book_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM books WHERE id = ?", (book_id,))
-    book = cursor.fetchone()
-    conn.close()
-    return dict(book) if book else None
+# Editing a review
+def edit_review(book_id, review_id, rating=None, note=None):
+    connection = get_connection()
+    cursor = connection.cursor()
+    updates = []
+    values = []
 
-# Filter books by genre
-def filter_books_by_genre(genre):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM books WHERE LOWER(genre) LIKE ?",
-        (f"%{genre.lower()}%",)
-    )
-    books = cursor.fetchall()
-    conn.close()
-    return [dict(book) for book in books]
+    if rating is not None:
+        updates.append("rating = %s")
+        values.append(rating)
+    if note is not None:
+        updates.append("note = %s")
+        values.append(note)
+    values.extend([book_id, review_id])
 
-# Delete a book and its reviews
+    query = f"UPDATE reviews SET {', '.join(updates)} WHERE book_id = %s AND id = %s"
+    cursor.execute(query, tuple(values))
+    connection.commit()
+    connection.close()
+    return {"message": f"Review ID {review_id} for book ID {book_id} updated."}
+
+# Deleting a review
+def delete_review(book_id, review_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "DELETE FROM reviews WHERE book_id = %s AND id = %s"
+    cursor.execute(query, (book_id, review_id))
+    connection.commit()
+    connection.close()
+    return {"message": f"Review ID {review_id} deleted from book ID {book_id}."}
+
+# Deleting a book
 def delete_book(book_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM reviews WHERE book_id = ?", (book_id,))
-    cursor.execute("DELETE FROM books WHERE id = ?", (book_id,))
-    conn.commit()
-    conn.close()
-    return {"message": f"Book with ID {book_id} deleted"}
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = "DELETE FROM reviews WHERE book_id = %s"
+    cursor.execute(query, (book_id,))
+    delete_book_query = "DELETE FROM books WHERE id = %s"
+    cursor.execute(delete_book_query, (book_id,))
+    connection.commit()
+    connection.close()
+    return {"message": f"Book ID {book_id} and its reviews have been deleted."}
 
-def update_book(book_id, book_title):
-    data = load_data()
-    for book in data["books"]:
-        if book["id"] == book_id:
-            book["title"] = book_title
-            save_data(data)
-            return True
-    return False
+# Viewing all books
+def view_books():
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM books"
+    cursor.execute(query)
+    books = cursor.fetchall()
+    connection.close()
+    return books
 
-def update_review(book_id, review_id, rating, note):
-    data = load_data()
-    for book in data["books"]:
-        if book["id"] == book_id:
-            for review in book["reviews"]:
-                print(f"  Review ID: {review['review_id']} | Rating: {review['rating']} | Note: {review['note']}")
-            return
-    print("Book not found.")
+# Searching books by genre
+def search_books_by_genre(genre):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM books WHERE LOWER(genre) LIKE %s"
+    cursor.execute(query, (f"%{genre.lower()}%",))
+    books = cursor.fetchall()
+    connection.close()
+    return books
 
-def add_review_to_db(book_id, rating, note):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO reviews (book_id, rating, note) VALUES (?, ?, ?)",
-        (book_id, rating, note)
-    )
-    # Optionally, update the reviews_count in books
-    cursor.execute(
-        "UPDATE books SET reviews_count = reviews_count + 1 WHERE id = ?",
-        (book_id,)
-    )
-    conn.commit()
-    conn.close()
-    return {"message": "Review added successfully"}
+# Searching a book by ID
+def search_book_by_id(book_id):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM books WHERE id = %s"
+    cursor.execute(query, (book_id,))
+    book = cursor.fetchone()
+    connection.close()
+    if book:
+        return {"message": "Book found.", "book": book}
+    return {"error": f"Book with ID {book_id} not found."}
 
 
-# Initialize the database when the script runs
+# Run initialization when the script is executed
 if __name__ == "__main__":
     initialize_database()
-
-
-
