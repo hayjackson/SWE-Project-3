@@ -92,3 +92,28 @@ def search_by_genre(genre):
     movies = cursor.fetchall()
     conn.close()
     return [{"id": movie[0], "name": movie[1], "genre": movie[2]} for movie in movies]
+
+
+
+
+#Keith
+
+
+def view_movie_genre():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT DISTINCT genre FROM movies')
+    genres = cursor.fetchall()
+    result = [genre[0] for genre in genres]
+    conn.close()
+    return result
+
+
+def view_top_movies():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM reviews ORDER BY rating DESC LIMIT 3')
+    reviews = cursor.fetchall()
+    result = [review[0] for review in reviews]
+    conn.close()
+    return result

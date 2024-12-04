@@ -1,5 +1,6 @@
 import gradio as gr
 import requests
+import movies
 
 # Base URL of the Flask API
 BASE_URL = "http://127.0.0.1:5000"
@@ -155,20 +156,20 @@ def search_reviews_frontend(movie_id):
 # Book Functions
 
 def add_book(title):
-    response = requests.post(f"{API_BASE_URL}/books", json={"title": title})
+    response = requests.post(f"{BASE_URL}/books", json={"title": title})
     if response.status_code == 201:
         return response.json()["message"]
     return response.json()["error"]
 
 def view_books():
-    response = requests.get(f"{API_BASE_URL}/books")
+    response = requests.get(f"{BASE_URL}/books")
     if response.status_code == 200:
         books = response.json()["books"]
         return "\n".join([f"ID: {book['id']} | Title: {book['title']}" for book in books])
     return "Failed to fetch books."
 
 def view_book_reviews(book_id):
-    response = requests.get(f"{API_BASE_URL}/books/{book_id}")
+    response = requests.get(f"{BASE_URL}/books/{book_id}")
     if response.status_code == 200:
         book = response.json()
         reviews = book.get("reviews", [])
@@ -180,13 +181,13 @@ def view_book_reviews(book_id):
     return response.json().get("error", "Error fetching reviews.")
 
 def add_book_review(book_id, rating, note):
-    response = requests.post(f"{API_BASE_URL}/books/{book_id}/reviews", json={"rating": rating, "note": note})
+    response = requests.post(f"{BASE_URL}/books/{book_id}/reviews", json={"rating": rating, "note": note})
     if response.status_code == 201:
         return response.json()["message"]
     return response.json()["error"]
 
 def delete_book(book_id):
-    response = requests.delete(f"{API_BASE_URL}/books/{book_id}")
+    response = requests.delete(f"{BASE_URL}/books/{book_id}")
     if response.status_code == 200:
         return response.json()["message"]
     return response.json()["error"]
@@ -319,10 +320,14 @@ with gr.Blocks() as demo:
         with gr.Row():
             gr.Markdown("# Welcome to our Media Recommendation App!!")
             #Display Genres
-            movie_genres = gr.Textbox(label = "Movies genres", min_width= 20, text_align='left')
+            genres = movies.view_movie_genre()
+            value = ", ".join(genres) if genres else "No genres available"
+            movie_genres = gr.Textbox(value = value , label = "Movies genres")
         # Display Top Movies
         with gr.Row():
-            top_movies = gr.Textbox(label = "Top rated movies", elem_id= 'custom-textbox')
+            movie = movies.view_top_movies()
+            value = ", ".join(movie) if movie else "No movies available"
+            top_movies = gr.Textbox(value= value, label = "Top rated movies")
 
 
     with gr.Tab("Add a Movie"):
@@ -487,4 +492,4 @@ with gr.Blocks() as demo:
             
 if __name__ == "__main__":
     
-    demo.launch()
+    demo.launch(server_port=5000, debug=True)
