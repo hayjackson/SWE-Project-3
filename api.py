@@ -108,30 +108,30 @@ def delete_single_book(book_id):
         return jsonify({"message": f"Book ID {book_id} deleted"}), 200
     return jsonify({"error": "Book not found"}), 404
 
-@app.route('/books/genre', methods=['GET'])
-def get_books_by_genre():
-    genre = request.args.get('genre', '')
-    filtered_books = filter_books_by_genre(genre)
-    if not filtered_books:
-        return jsonify({"message": f"No books found in the '{genre}' genre."}), 404
-    return jsonify(filtered_books), 200
+# @app.route('/books/genre', methods=['GET'])
+# def get_books_by_genre():
+#     genre = request.args.get('genre', '')
+#     filtered_books = filter_books_by_genre(genre)
+#     if not filtered_books:
+#         return jsonify({"message": f"No books found in the '{genre}' genre."}), 404
+#     return jsonify(filtered_books), 200
 
-@app.route('/books/<int:book_id>/reviews', methods=['POST'])
-def add_review(book_id):
-    data = request.json
-    rating = data.get('rating')
-    note = data.get('note')
+# @app.route('/books/<int:book_id>/reviews', methods=['POST'])
+# def add_review(book_id):
+#     data = request.json
+#     rating = data.get('rating')
+#     note = data.get('note')
 
-    if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
-        return jsonify({"error": "Rating must be an integer between 1 and 5"}), 400
+#     if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
+#         return jsonify({"error": "Rating must be an integer between 1 and 5"}), 400
 
-    response = add_review_to_db(book_id, rating, note)
-    return jsonify(response), 201
-
-
+#     response = add_review_to_db(book_id, rating, note)
+#     return jsonify(response), 201
 
 
 
+
+# Tv_shows
 @app.route('/tv_shows', methods=['GET'])
 def get_tv_shows():
     return jsonify(tv_shows.view_shows()), 200
