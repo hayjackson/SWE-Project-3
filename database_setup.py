@@ -32,6 +32,24 @@ def initialize_db():
 
     conn.commit()
     conn.close()
+# Tv_shows
+def initialize_tvshow_db():
+    conn = sqlite3.connect('tvshows_rvw.db')
+    cursor = conn.cursor()
+
+    # Creating tv_shows 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tv_shows (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            genre TEXT NOT NULL,
+            rating REAL
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+ 
 
 #Books database - Kai
 def initialize_database():
