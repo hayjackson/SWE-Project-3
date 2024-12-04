@@ -3,7 +3,7 @@ import requests
 
 # Base URL of the Flask API
 BASE_URL = "http://127.0.0.1:5000"
-
+ 
 # Functions to interact with the API
 
 
@@ -199,6 +199,113 @@ def delete_book(book_id):
 
 
 
+# tv_show 
+
+def add_show_frontend(title, genre, rating):
+    try:
+        response = requests.post(f"{BASE_URL}/tv_shows", json={"title": title, "genre": genre, "rating": rating})
+        response.raise_for_status()  
+        if response.status_code == 200:
+            return "TV Show added successfully"
+        else:
+            return f"Error: {response.json().get('error', 'Unknown error occurred')}"
+    except requests.RequestException as e:
+        return f"Error: Failed to connect to the API - {str(e)}"
+def edit_show_frontend(show_id, title, genre, rating):
+    # Edited, Dec 4, 2024
+    if not show_id.isdigit():
+        return "Error: Show ID must be an integer!"
+    if not title.strip():
+        return "Error: Title cannot be empty!"
+    if not genre.strip():
+        return "Error: Genre cannot be empty!"
+    if not (0 <= float(rating) <= 5):
+        return "Error: Rating must be between 0 and 5!"
+    try:
+        response = requests.put(
+            f"{BASE_URL}/tv_shows/{show_id}",
+            json={"title": title, "genre": genre, "rating": rating},
+        )
+        if response.status_code == 200:
+            return response.json().get("message", "TV Show updated successfully!")
+        return f"Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"Error: Failed to connect to the API - {str(e)}"
+
+
+def delete_show_frontend(show_id):
+    # Edited, Dec 4, 2024
+    if not show_id.isdigit():
+        return "Error: Show ID must be an integer!"
+    try:
+        response = requests.delete(f"{BASE_URL}/tv_shows/{show_id}")
+        if response.status_code == 200:
+            return response.json().get("message", "TV Show deleted successfully!")
+        return f"Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"Error: Failed to connect to the API - {str(e)}"
+
+
+def search_shows_frontend(query):
+    # Edited, Dec 4, 2024
+    if not query.strip():
+        return "Error: Search query cannot be empty!"
+    try:
+        response = requests.get(f"{BASE_URL}/tv_shows/search", params={"query": query})
+        if response.status_code == 200:
+            shows = response.json()
+            if not shows:
+                return "No shows found matching the search query."
+            output = ["Search Results:"]
+            for show in shows:
+                output.append(
+                    f"ID: {show['id']}, Title: {show['title']}, Genre: {show['genre']}, Rating: {show['rating']}"
+                )
+            return "\n".join(output)
+        return f"Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"Error: Failed to connect to the API - {str(e)}"
+
+
+def filter_shows_by_genre_frontend(genre):
+    # Edited, Dec 4, 2024
+    if not genre.strip():
+        return "Error: Genre cannot be empty!"
+    try:
+        response = requests.get(f"{BASE_URL}/tv_shows/genre", params={"genre": genre})
+        if response.status_code == 200:
+            shows = response.json()
+            if not shows:
+                return f"No shows found under genre '{genre}'."
+            output = [f"Shows under genre '{genre}':"]
+            for show in shows:
+                output.append(
+                    f"ID: {show['id']}, Title: {show['title']}, Genre: {show['genre']}, Rating: {show['rating']}"
+                )
+            return "\n".join(output)
+        return f"Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"Error: Failed to connect to the API - {str(e)}"
+
+
+def view_shows_frontend():
+    # Edited, Dec 4, 2024
+    try:
+        response = requests.get(f"{BASE_URL}/tv_shows")
+        if response.status_code == 200:
+            shows = response.json()
+            if not shows:
+                return "No TV shows found. Add some to get started!"
+            output = ["TV Shows List:"]
+            for show in shows:
+                output.append(
+                    f"ID: {show['id']}, Title: {show['title']}, Genre: {show['genre']}, Rating: {show['rating']}"
+                )
+            return "\n".join(output)
+        return f"Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"Error: Failed to connect to the API - {str(e)}"
+
 
 # Gradio Interface
 
@@ -314,5 +421,58 @@ with gr.Blocks() as demo:
                 view_book_reviews, inputs=view_reviews_book_id_input, outputs=book_reviews_output
             )
 
+
+
+
+        
+#tv_show
+    with gr.Tab("TV Shows"):
+        gr.Markdown("## 📺 TV Show Reviews")
+
+        with gr.Tab("Add a TV Show"):
+            show_title_input = gr.Textbox(label="TV Show Title", placeholder="Enter TV show title...")
+            show_genre_input = gr.Textbox(label="Genre", placeholder="Enter TV show genre...")
+            show_rating_input = gr.Slider(0, 10, step=0.1, label="Rating")
+            show_add_btn = gr.Button("Add TV Show")
+            show_output = gr.Textbox(label="Status")
+            show_add_btn.click(add_show_frontend, inputs=[show_title_input, show_genre_input, show_rating_input], outputs=show_output)
+
+        with gr.Tab("Edit a TV Show"):
+            edit_show_id_input = gr.Textbox(label="TV Show ID", placeholder="Enter TV show ID...")
+            edit_show_title_input = gr.Textbox(label="New Title", placeholder="Enter new title...")
+            edit_show_genre_input = gr.Textbox(label="New Genre", placeholder="Enter new genre...")
+            edit_show_rating_input = gr.Slider(0, 10, step=0.1, label="New Rating")
+            edit_show_btn = gr.Button("Edit TV Show")
+            edit_show_output = gr.Textbox(label="Status")
+            edit_show_btn.click(
+                edit_show_frontend,
+                inputs=[edit_show_id_input, edit_show_title_input, edit_show_genre_input, edit_show_rating_input],
+                outputs=edit_show_output,
+            )
+
+        with gr.Tab("Delete a TV Show"):
+            del_show_input = gr.Textbox(label="Delete TV Show ID", placeholder="Enter TV show ID...")
+            del_show_btn = gr.Button("Delete TV Show")
+            del_show_output = gr.Textbox(label="Status")
+            del_show_btn.click(delete_show_frontend, inputs=del_show_input, outputs=del_show_output)
+
+        with gr.Tab("Search TV Shows"):
+            show_search_input = gr.Textbox(label="Search Query", placeholder="Enter search term...")
+            show_search_btn = gr.Button("Search TV Shows")
+            show_search_output = gr.Textbox(label="Search Results", interactive=False)
+            show_search_btn.click(search_shows_frontend, inputs=show_search_input, outputs=show_search_output)
+
+        with gr.Tab("Filter TV Shows by Genre"):
+            show_genre_filter_input = gr.Textbox(label="Genre", placeholder="Enter genre to filter...")
+            show_genre_filter_btn = gr.Button("Filter by Genre")
+            show_genre_filter_output = gr.Textbox(label="Filtered TV Shows", interactive=False)
+            show_genre_filter_btn.click(filter_shows_by_genre_frontend, inputs=show_genre_filter_input, outputs=show_genre_filter_output)
+
+        with gr.Tab("View All TV Shows"):
+            view_shows_btn = gr.Button("View All TV Shows")
+            shows_display = gr.Textbox(label="TV Show List", interactive=False)
+            view_shows_btn.click(view_shows_frontend, inputs=[], outputs=shows_display)
+            
 if __name__ == "__main__":
+    
     demo.launch()
