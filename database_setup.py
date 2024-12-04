@@ -49,9 +49,8 @@ def initialize_tvshow_db():
 
     conn.commit()
     conn.close()
- 
 
-#Books database - Kai
+# Initialize the database (if needed)
 def initialize_database():
     connection = get_connection()
     cursor = connection.cursor()
@@ -72,9 +71,8 @@ def initialize_database():
             FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
         )
     ''')
-    # dont think we need it twice..but idk
-    # connection.commit()
-    # connection.close()
+    connection.commit()
+    connection.close()
 
 if __name__ == "__main__":
     initialize_db()
