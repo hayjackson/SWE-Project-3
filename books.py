@@ -2,7 +2,9 @@
 # Author: Kai Francis
 # Date: Updated December 2, 2024
 
-from books_db import get_connection
+import sqlite3
+
+DATABASE = 'books.db'
 
 # Adding a new book with genre
 def add_book(book_title, genre):
