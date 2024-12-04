@@ -51,7 +51,7 @@ def initialize_tvshow_db():
     conn.commit()
     conn.close()
 
-# Initialize the database (if needed)
+#books
 def initialize_database():
     connection = get_connection()
     cursor = connection.cursor()
