@@ -47,6 +47,7 @@ def initialize_tvshow_db():
         )
     ''')
 
+
     conn.commit()
     conn.close()
 
