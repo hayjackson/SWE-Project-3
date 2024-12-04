@@ -15,10 +15,12 @@ This project was created as part of the Software Engineering (SWE) course at the
 
  ## Contributors
   ## Backend
-  - Aditi Jha
-  - Mastewal Berhe
-  - Kai Francis
+  - Aditi Jha (movies)
+  - Mastewal Berhe (tv shows)
+  - Kai Francis (books)
   ## Frontend
-  - Sumeyya Sherief
-  - Rebecca Rogovich
-  - Haylee Jackson
+  - Sumeyya Sherief (books, overall frontend)
+  - Rebecca Rogovich (movies)
+  - Haylee Jackson (books)
+  - NK Adu-Boahen (tv shows)
+  - Keith Young (main page)
