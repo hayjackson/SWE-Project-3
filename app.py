@@ -312,6 +312,18 @@ def view_shows_frontend():
 # First: Movies tab:
 with gr.Blocks() as demo:
     gr.Markdown("# 🎥 Movie Review App")
+    
+    with gr.Tab("Home Page"):
+       
+       
+        with gr.Row():
+            gr.Markdown("# Welcome to our Media Recommendation App!!")
+            #Display Genres
+            movie_genres = gr.Textbox(label = "Movies genres", min_width= 20, text_align='left')
+        # Display Top Movies
+        with gr.Row():
+            top_movies = gr.Textbox(label = "Top rated movies", elem_id= 'custom-textbox')
+
 
     with gr.Tab("Add a Movie"):
         movie_name_input = gr.Textbox(label="Movie Name", placeholder="Enter movie name...")
