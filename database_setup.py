@@ -34,19 +34,27 @@ def initialize_db():
     conn.close()
 # Tv_shows
 def initialize_tvshow_db():
-    conn = sqlite3.connect('tvshows_rvw.db')
+    """Initialize the database and create tables if they don't exist."""
+    conn = sqlite3.connect("tv_shows_reviews.db")
     cursor = conn.cursor()
 
-    # Creating tv_shows 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tv_shows (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
-            genre TEXT NOT NULL,
-            rating REAL
+            genre TEXT NOT NULL
         )
     ''')
-
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            movie_id INTEGER NOT NULL,
+            rating REAL NOT NULL,
+            note TEXT,
+            FOREIGN KEY (movie_id) REFERENCES tv_shows (id) ON DELETE CASCADE
+        )
+    ''')
 
     conn.commit()
     conn.close()
@@ -77,3 +85,4 @@ def initialize_database():
 
 if __name__ == "__main__":
     initialize_db()
+    initialize_tvshow_db()
