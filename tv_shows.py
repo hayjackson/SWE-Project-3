@@ -1,264 +1,166 @@
 # #Author Mastewal 
-# # TV_shows
-# import sqlite3
-# import requests
+# TV_shows
 
-# DATABASE = 'tvshows_rvw.db'
-
-# # Function to add tv_show
-# def add_show_from_api(title, genre, rating):
-#     conn = sqlite3.connect(DATABASE)
-#     cursor = conn.cursor()
-    
-#     cursor.execute('''
-#         INSERT INTO tv_shows (title, genre, rating)
-#         VALUES (?, ?, ?)
-#     ''', (title, genre, rating))
-    
-#     show_id = cursor.lastrowid
-#     conn.commit()
-#     conn.close()
-    
-#     return {"id": show_id, "title": title, "genre": genre, "rating": rating}
-    
-# def get_show(show_id):
-#     conn = sqlite3.connect(DATABASE)
-#     cursor = conn.cursor()
-    
-#     cursor.execute('SELECT * FROM tv_shows WHERE id = ?', (show_id,))
-#     show = cursor.fetchone()
-    
-#     conn.close()
-    
-#     if show:
-#         return {"id": show[0], "title": show[1], "genre": show[2], "rating": show[3]}
-    
-#     return None
-
-# def view_shows():
-#     conn = sqlite3.connect(DATABASE)
-#     cursor = conn.cursor()
-#     cursor.execute('SELECT * FROM tv_shows')
-#     shows = cursor.fetchall()
-#     conn.close()
-#     return [{"id": show[0], "title": show[1], "genre": show[2], "rating": show[3]} for show in shows]
-
-# # Function to edit a TV show 
-# def edit_show(show_id, new_data):
-#     conn = sqlite3.connect(DATABASE)
-#     cursor = conn.cursor()
-
-#     update_query = 'UPDATE tv_shows SET '
-#     update_data = []
-    
-#     for key, value in new_data.items():
-#         update_query += f'{key} = ?, '
-#         update_data.append(value)
-
-#     update_query = update_query[:-2] + ' WHERE id = ?'
-    
-#     update_data.append(show_id)
-    
-#     cursor.execute(update_query, tuple(update_data))
-    
-#     conn.commit()
-#     conn.close()
-    
-#     return get_show(show_id)
-
-# # Function to delete a TV show
-# def delete_show(show_id):
-#     conn = sqlite3.connect(DATABASE)
-    
-#     cursor = conn.cursor()
-    
-#     cursor.execute('DELETE FROM tv_shows WHERE id = ?', (show_id,))
-    
-#     deleted = cursor.rowcount > 0
-    
-#     conn.commit()
-#     conn.close()
-    
-#     return deleted
-
-
-# # Function to search for TV shows using the TVmaze API
-# def search_shows(query):
-#     base_url = "http://api.tvmaze.com"
-    
-#     response = requests.get(f"{base_url}/search/shows", params={"q": query})
-    
-#     if response.status_code == 200:
-#         return response.json()
-    
-#     else:
-#         print("Error: unable to fetch shows")
-#         return []
-    
-    
-# #Filter by genre functionality 
-# def filter_shows_by_genre(genre):
-#     conn = sqlite3.connect(DATABASE)
-    
-#     cursor = conn.cursor()
-    
-#     cursor.execute('SELECT * FROM tv_shows WHERE LOWER(genre) LIKE ?', (f'%{genre.lower()}%',))
-    
-#     shows = cursor.fetchall()
-    
-#     conn.close()
-    
-#     return [{"id": show[0], "title": show[1], "genre": show[2], "rating": show[3]} for show in shows]
-    
-# # Search for shows using the API
-# def search_and_add_show(query):
-#     search_results = search_shows(query)
-    
-#     if not search_results:
-#         print(f"No results found for '{query}'")
-#         return None
-
-#    # Display search results
-#     print(f"Search results for '{query}':")
-#     for i, result in enumerate(search_results[:5], 1):
-#        show = result['show']
-#        print(f"{i}. {show['name']} ({show.get('premiered', 'N/A')[:4]})")
-
-#     while True:
-#        try:
-#            choice = int(input("Enter the number of the show you want to add (0 to cancel): "))
-#            if 0 <= choice <= len(search_results):
-#                break
-#            print("Invalid choice. Please try again.")
-#        except ValueError:
-#            print("Please enter a valid number.")
-
-#     if choice == 0:
-#        return None
-
-#     selected_show = search_results[choice - 1]['show']
-#     title = selected_show['name']
-#     genre = ', '.join(selected_show.get('genres', []))
-#     rating = selected_show.get('rating', {}).get('average', 0)
-
-#     new_show = add_show_from_api(title, genre, rating)
-#     print(f"Added: {new_show['title']}")
-#     return new_show
-
-# def display_shows_by_genre():
-#    genre = input("Enter the genre to filter by: ")
-#    filtered_shows = filter_shows_by_genre(genre)
-   
-#    if not filtered_shows:
-#        print(f"No shows found in the '{genre}' genre.")
-#    else:
-#        print(f"Shows in the '{genre}' genre:")
-#        for show in filtered_shows:
-#            print(f"- {show['title']} ({show['rating']})")
 import sqlite3
 
-DATABASE = 'tvshows_rvw.db'
+DATABASE = 'tv_shows_reviews.db'
 
-# Function to add a TV show
-def add_show(title, genre, rating):
+def add_show(title, genre):
+    """Add a new TV show."""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO tv_shows (title, genre) VALUES (?, ?)', (title, genre))
+    conn.commit()
+    conn.close()
+    return {"message": f"TV Show '{title}' added successfully."}
+
+def add_review(show_id, rating, note):
+    """Add a review for a specific TV show."""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    
+    cursor.execute('SELECT id FROM tv_shows WHERE id = ?', (show_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return {"error": f"TV Show ID {show_id} does not exist."}
+
+  
+    cursor.execute('INSERT INTO reviews (movie_id, rating, note) VALUES (?, ?, ?)', (show_id, rating, note))
+    conn.commit()
+    conn.close()
+
+    return {"message": f"Review added to TV Show ID {show_id}."}
+
+
+def edit_review(show_id, review_id, rating=None, note=None):
+    """Edit an existing review for a specific TV show."""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    if rating is None and note is None:
+        conn.close()
+        return {"error": "No fields to update. Provide at least one of 'rating' or 'note'."}
+
+    if rating is not None:
+        cursor.execute(
+            'UPDATE reviews SET rating = ? WHERE id = ? AND movie_id = ?',
+            (rating, review_id, show_id)
+        )
+
+    if note is not None:
+        cursor.execute(
+            'UPDATE reviews SET note = ? WHERE id = ? AND movie_id = ?',
+            (note, review_id, show_id)
+        )
+
+    conn.commit()
+    conn.close()
+
+    return {"message": f"Review ID {review_id} for TV Show ID {show_id} updated."}
+
+def delete_review(show_id, review_id):
+    """Delete a specific review from a TV show."""
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
-    cursor.execute('INSERT INTO tv_shows (title, genre, rating) VALUES (?, ?, ?)', (title, genre, rating))
+    cursor.execute('DELETE FROM reviews WHERE id = ? AND movie_id = ?', (review_id, show_id))
+    
     conn.commit()
     conn.close()
     
-    return {"message": f"TV Show '{title}' added successfully."}
+    return {"message": f"Review ID {review_id} deleted from TV Show ID {show_id}."}
 
-# Function to get a TV show by ID
-def get_show(show_id):
+def delete_show(show_id):
+    """Delete a TV show and all its associated reviews."""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Delete all reviews associated with the show
+    cursor.execute('DELETE FROM reviews WHERE movie_id = ?', (show_id,))
+    
+    # Delete the show itself
+    cursor.execute('DELETE FROM tv_shows WHERE id = ?', (show_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": f"TV Show ID {show_id} and its reviews have been deleted."}
+
+def view_reviews():
+    """View all TV shows along with their reviews."""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    # Calculate average rating for each TV show
+    cursor.execute('''
+        SELECT tv_shows.id, tv_shows.title, tv_shows.genre, 
+               IFNULL(AVG(reviews.rating), 0) as avg_rating
+        FROM tv_shows
+        LEFT JOIN reviews ON tv_shows.id = reviews.movie_id
+        GROUP BY tv_shows.id
+    ''')
+    shows = cursor.fetchall()
+
+    result = []
+
+    for show in shows:
+        cursor.execute('SELECT id, rating, note FROM reviews WHERE movie_id = ?', (show[0],))
+        reviews = cursor.fetchall()
+
+        result.append({
+            "id": show[0],
+            "title": show[1],
+            "genre": show[2],
+            "rating": show[3],  # Correct average rating
+            "reviews": [{"review_id": r[0], "rating": r[1], "note": r[2]} for r in reviews]
+        })
+
+    conn.close()
+
+    return result
+
+
+
+
+
+def search_reviews(show_id):
+    """Search for reviews of a specific TV show."""
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
     cursor.execute('SELECT * FROM tv_shows WHERE id = ?', (show_id,))
+    
     show = cursor.fetchone()
     
+    if not show:
+        return {"error": "TV Show not found."}
+    
+    cursor.execute('SELECT * FROM reviews WHERE movie_id = ?', (show_id,))
+    
+    reviews = cursor.fetchall()
+    
     conn.close()
     
-    if show:
-        return {"id": show[0], "title": show[1], "genre": show[2], "rating": show[3]}
-    
-    return None
+    return {
+        "id": show[0],
+        "title": show[1],
+        "genre": show[2],
+        "reviews": [{"review_id": r[0], "rating": r[2], "note": r[3]} for r in reviews]
+    }
 
-# Function to view all TV shows
-def view_shows():
+def search_by_genre(genre):
+    """Search for TV shows by genre."""
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
-    cursor.execute('SELECT * FROM tv_shows')
+    
+    cursor.execute('SELECT id, title, genre, rating FROM tv_shows WHERE genre = ?', (genre,))
     shows = cursor.fetchall()
     
     conn.close()
-    
+
+  
     return [{"id": show[0], "title": show[1], "genre": show[2], "rating": show[3]} for show in shows]
 
-# Function to edit a TV show
-def edit_show(show_id, new_data):
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
 
-    update_query = 'UPDATE tv_shows SET '
-    update_data = []
-    
-    for key, value in new_data.items():
-        update_query += f'{key} = ?, '
-        update_data.append(value)
-
-    update_query = update_query[:-2] + ' WHERE id = ?'
-    
-    update_data.append(show_id)
-    
-    cursor.execute(update_query, tuple(update_data))
-    
-    conn.commit()
-    conn.close()
-    
-    return get_show(show_id)
-
-# Function to delete a TV show
-def delete_show(show_id):
-    conn = sqlite3.connect(DATABASE)
-    
-    cursor = conn.cursor()
-    
-    cursor.execute('DELETE FROM tv_shows WHERE id = ?', (show_id,))
-    
-    deleted = cursor.rowcount > 0
-    
-    conn.commit()
-    conn.close()
-    
-    return deleted
-
-# Function to filter TV shows by genre
-def filter_shows_by_genre(genre):
-    conn = sqlite3.connect(DATABASE)
-    
-    cursor = conn.cursor()
-    
-    cursor.execute('SELECT * FROM tv_shows WHERE LOWER(genre) LIKE ?', (f'%{genre.lower()}%',))
-    
-    shows = cursor.fetchall()
-    
-    conn.close()
-    
-    return [{"id": show[0], "title": show[1], "genre": show[2], "rating": show[3]} for show in shows]
-
-# Function to search for TV shows by title
-def search_shows(query):
-    conn = sqlite3.connect(DATABASE)
-    
-    cursor = conn.cursor()
-    
-    cursor.execute('SELECT * FROM tv_shows WHERE LOWER(title) LIKE ?', (f'%{query.lower()}%',))
-    
-    shows = cursor.fetchall()
-    
-    conn.close()
-    
-    return [{"id": show[0], "title": show[1], "genre": show[2], "rating": show[3]} for show in shows]
