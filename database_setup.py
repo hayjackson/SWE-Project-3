@@ -33,11 +33,13 @@ def initialize_db():
     conn.commit()
     conn.close()
 # Tv_shows
+#Mastewal
 def initialize_tvshow_db():
     """Initialize the database and create tables if they don't exist."""
     conn = sqlite3.connect("tv_shows_reviews.db")
     cursor = conn.cursor()
 
+    # Create tv_shows table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tv_shows (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,24 +47,28 @@ def initialize_tvshow_db():
             genre TEXT NOT NULL
         )
     ''')
-    
+
+    # Create reviews table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS reviews (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            movie_id INTEGER NOT NULL,
-            rating REAL NOT NULL,
+            tv_show_id INTEGER NOT NULL,
+            rating REAL NOT NULL DEFAULT 0, -- Ensure valid default for ratings
             note TEXT,
-            FOREIGN KEY (movie_id) REFERENCES tv_shows (id) ON DELETE CASCADE
+            FOREIGN KEY (tv_show_id) REFERENCES tv_shows (id) ON DELETE CASCADE
         )
     ''')
 
     conn.commit()
     conn.close()
 
+
+
 #books
 def initialize_database():
-    connection = get_connection()
-    cursor = connection.cursor()
+    conn = sqlite3.connect('books.db')
+    # connection = get_connection()
+    cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS books (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -80,9 +86,13 @@ def initialize_database():
             FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
         )
     ''')
-    connection.commit()
-    connection.close()
+    # connection.commit()
+    # connection.close()
+    conn.commit()
+    conn.close()
+
 
 if __name__ == "__main__":
     initialize_db()
     initialize_tvshow_db()
+    initialize_database()
