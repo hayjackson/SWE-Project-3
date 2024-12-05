@@ -70,8 +70,8 @@ def search_by_genre():
 # Books Endpoints
 @app.route('/books', methods=['GET'])
 def get_books():
-    data = books.load_data()
-    return jsonify(data), 200
+    data = books.get_all_books()
+    return jsonify(books), 200
 
 @app.route('/books/<int:book_id>', methods=['GET'])
 def get_single_book(book_id):
@@ -117,7 +117,7 @@ def get_books_by_genre():
     return jsonify(filtered_books), 200
 
 @app.route('/books/<int:book_id>/reviews', methods=['POST'])
-def add_review(book_id):
+def add_book_review(book_id):
     data = request.json
     rating = data.get('rating')
     note = data.get('note')
