@@ -1,5 +1,6 @@
 import gradio as gr
 import requests
+import movies
 
 # Base URL of the Flask API
 BASE_URL = "http://127.0.0.1:5000"
@@ -155,7 +156,7 @@ def search_reviews_frontend(movie_id):
 # Book Functions
 
 def add_book(title):
-    response = requests.post(f"{API_BASE_URL}/books", json={"title": title})
+    response = requests.post(f"{BASE_URL}/books", json={"title": title})
     if response.status_code == 201:
         return response.json()["message"]
     return response.json()["error"]
@@ -341,10 +342,14 @@ with gr.Blocks() as demo:
         with gr.Row():
             gr.Markdown("# Welcome to our Media Recommendation App!!")
             #Display Genres
-            movie_genres = gr.Textbox(label = "Movies genres", min_width= 20, text_align='left')
+            genres = movies.view_movie_genre()
+            value = ", ".join(genres) if genres else "No genres available"
+            movie_genres = gr.Textbox(value = value , label = "Movies genres")
         # Display Top Movies
         with gr.Row():
-            top_movies = gr.Textbox(label = "Top rated movies", elem_id= 'custom-textbox')
+            movie = movies.view_top_movies()
+            value = ", ".join(movie) if movie else "No movies available"
+            top_movies = gr.Textbox(value= value, label = "Top rated movies")
 
 
     with gr.Tab("Add a Movie"):
