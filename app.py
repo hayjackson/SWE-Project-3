@@ -1,6 +1,8 @@
 import gradio as gr
 import requests
 import movies
+import tv_shows
+import books
 
 # Base URL of the Flask API
 BASE_URL = "http://127.0.0.1:5000"
@@ -152,54 +154,6 @@ def search_reviews_frontend(movie_id):
 
 
 
-
-# Book Functions
-
-def add_book(title):
-    response = requests.post(f"{BASE_URL}/books", json={"title": title})
-    if response.status_code == 201:
-        return response.json()["message"]
-    return response.json()["error"]
-
-def view_books():
-    response = requests.get(f"{API_BASE_URL}/books")
-    if response.status_code == 200:
-        books = response.json()["books"]
-        return "\n".join([f"ID: {book['id']} | Title: {book['title']}" for book in books])
-    return "Failed to fetch books."
-
-def view_book_reviews(book_id):
-    response = requests.get(f"{API_BASE_URL}/books/{book_id}")
-    if response.status_code == 200:
-        book = response.json()
-        reviews = book.get("reviews", [])
-        if reviews:
-            return "\n".join(
-                [f"Review ID: {review['review_id']} | Rating: {review['rating']} | Note: {review['note']}" for review in reviews]
-            )
-        return "No reviews found for this book."
-    return response.json().get("error", "Error fetching reviews.")
-
-def add_book_review(book_id, rating, note):
-    response = requests.post(f"{API_BASE_URL}/books/{book_id}/reviews", json={"rating": rating, "note": note})
-    if response.status_code == 201:
-        return response.json()["message"]
-    return response.json()["error"]
-
-def delete_book(book_id):
-    response = requests.delete(f"{API_BASE_URL}/books/{book_id}")
-    if response.status_code == 200:
-        return response.json()["message"]
-    return response.json()["error"]
-
-def delete_book_review(book_id, review_id):
-    response = requests.delete(f"{API_BASE_URL}/books/{book_id}")
-    if response.status_code == 200:
-        return response.json()["message"]
-    return response.json()["error"]
-
-
-
 # tv_show 
 
 def add_tv_show_frontend(title, genre):
@@ -329,6 +283,125 @@ def search_tv_reviews_frontend(tv_show_id):
     except requests.exceptions.RequestException as e:
         return f"❌ Error: Failed to connect to the API - {str(e)}"
 
+# Adding a new book
+def add_book(book_title, genre):
+    if not book_title.strip():
+        return "❌ Error: Book title cannot be empty!"
+    if not genre.strip():
+        return "❌ Error: Genre cannot be empty!"
+    try:
+        response = requests.post(f"{BASE_URL}/books", json={"title": book_title, "genre": genre})
+        if response.status_code == 201:
+            return response.json().get("message", "✅ Book added successfully!")
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+# Adding a review to a book
+def add_review(book_id, rating, note):
+    if not book_id.isdigit():
+        return "❌ Error: Book ID must be an integer!"
+    if not (0 <= float(rating) <= 5):
+        return "❌ Error: Rating must be between 0 and 5!"
+    if not note.strip():
+        return "❌ Error: Review note cannot be empty!"
+    try:
+        response = requests.post(
+            f"{BASE_URL}/books/{book_id}/reviews",
+            json={"rating": float(rating), "note": note},
+        )
+        if response.status_code == 201:
+            return response.json().get("message", "✅ Review added successfully!")
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+# Editing a review
+def edit_review(book_id, review_id, rating=None, note=None):
+    if not book_id.isdigit() or not review_id.isdigit():
+        return "❌ Error: Both Book ID and Review ID must be integers!"
+    payload = {}
+    if rating is not None:
+        if not (0 <= float(rating) <= 5):
+            return "❌ Error: Rating must be between 0 and 5!"
+        payload["rating"] = float(rating)
+    if note:
+        payload["note"] = note.strip()
+    if not payload:
+        return "❌ Error: No data provided for update!"
+    try:
+        response = requests.put(f"{BASE_URL}/books/{book_id}/reviews/{review_id}", json=payload)
+        if response.status_code == 200:
+            return response.json().get("message", "✅ Review updated successfully!")
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+# Deleting a book
+def delete_book(book_id):
+    if not book_id.isdigit():
+        return "❌ Error: Book ID must be an integer!"
+    try:
+        response = requests.delete(f"{BASE_URL}/books/{book_id}")
+        if response.status_code == 200:
+            return response.json().get("message", "✅ Book deleted successfully!")
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+# Deleting a review
+def delete_review(book_id, review_id):
+    if not book_id.isdigit() or not review_id.isdigit():
+        return "❌ Error: Both Book ID and Review ID must be integers!"
+    try:
+        response = requests.delete(f"{BASE_URL}/books/{book_id}/reviews/{review_id}")
+        if response.status_code == 200:
+            return response.json().get("message", "✅ Review deleted successfully!")
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+# Searching books by genre
+def search_books_by_genre(genre):
+    if not genre.strip():
+        return "❌ Error: Genre cannot be empty!"
+    try:
+        response = requests.get(f"{BASE_URL}/books/genre", params={"genre": genre})
+        if response.status_code == 200:
+            books = response.json()
+            if not books:
+                return f"📚 No books found under genre '{genre}'."
+            output = [f"📚 Books under genre '{genre}':"]
+            for book in books:
+                output.append(f"Book #{book['id']}: {book['title']}")
+            return "\n".join(output)
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
+# Viewing all books
+def view_books():
+    try:
+        response = requests.get(f"{BASE_URL}/books")
+        if response.status_code == 200:
+            books = response.json()
+            if not books:
+                return "📚 No books found. Add some to get started!"
+            output = ["📚 Book List:"]
+            for book in books:
+                output.append(f"Book #{book['id']}: {book['title']} (Genre: {book['genre']})")
+                if not book["reviews"]:
+                    output.append("   No reviews yet.")
+                else:
+                    for review in book["reviews"]:
+                        output.append(
+                            f"   Review #{review['review_id']} | Rating: {review['rating']}/5 | {review['note']}"
+                        )
+            return "\n".join(output)
+        return f"❌ Error: {response.json().get('error', 'Unexpected error')}"
+    except requests.exceptions.RequestException as e:
+        return f"❌ Error: Failed to connect to the API - {str(e)}"
+
 
 # Gradio Interface
 
@@ -420,47 +493,6 @@ with gr.Blocks() as demo:
 
 
 
-        
-
-    with gr.Tab("Books"):
-        
-        # Add Book
-        with gr.Row():
-            gr.Markdown("## Add a Book")
-            book_title_input = gr.Textbox(label="Book Tittle", placeholder="Enter book title...")
-            book_add_button = gr.Button("Add Book")
-            book_output = gr.Textbox(label="Status")
-            book_add_button.click(add_book, inputs=book_title_input, outputs=book_output)
-
-        # View Books
-        with gr.Row():
-            gr.Markdown("## View Books")
-            view_books_button = gr.Button("View Books")
-            books_output = gr.Textbox(label="Book List")
-            view_books_button.click(view_books, outputs=books_output)
-
-        # Add Book Review
-        with gr.Row():
-            book_id_input = gr.Number(label="Book ID", value=1)
-            book_rating_input = gr.Slider(label="Rating", minimum=1, maximum=5, step=0.5)
-            book_note_input = gr.Textbox(label="Review Note", placeholder="Write your review...")
-            book_review_button = gr.Button("Add Review")
-            review_output = gr.Textbox(label="Status")
-            book_review_button.click(
-                add_book_review, inputs=[book_id_input, book_rating_input, book_note_input], outputs=review_output
-            )
-
-        # View Book Reviews
-        with gr.Row():
-            gr.Markdown("## View Reviews")
-            view_reviews_book_id_input = gr.Number(label="Book ID", value=1)
-            view_book_reviews_button = gr.Button("View Reviews")
-            book_reviews_output = gr.Textbox(label="Book Reviews")
-            view_book_reviews_button.click(
-                view_book_reviews, inputs=view_reviews_book_id_input, outputs=book_reviews_output
-            )
-
-
 
 
         
@@ -535,6 +567,78 @@ with gr.Blocks() as demo:
             view_tv_shows_btn = gr.Button("View All TV Shows")
             tv_shows_display = gr.Textbox(label="TV Show List", interactive=False)
             view_tv_shows_btn.click(view_tv_shows_frontend, inputs=[], outputs=tv_shows_display)
+
+
+# Books Tab
+    with gr.Tab("Books"):
+        gr.Markdown("## 📚 Book Management")
+
+        with gr.Tab("Add a Book"):
+            book_title_input = gr.Textbox(label="Book Title", placeholder="Enter book title...")
+            book_genre_input = gr.Textbox(label="Genre", placeholder="Enter book genre...")
+            book_add_btn = gr.Button("Add Book")
+            book_output = gr.Textbox(label="Status")
+            book_add_btn.click(add_book, inputs=[book_title_input, book_genre_input], outputs=book_output)
+
+        with gr.Tab("Add a Review"):
+            book_id_input = gr.Textbox(label="Book ID", placeholder="Enter book ID...")
+            rating_input = gr.Slider(0, 5, step=0.5, label="Rating")
+            review_note_input = gr.Textbox(label="Review Note", placeholder="Write your review...")
+            review_add_btn = gr.Button("Add Review")
+            review_output = gr.Textbox(label="Status")
+            review_add_btn.click(
+                add_review,
+                inputs=[book_id_input, rating_input, review_note_input],
+                outputs=review_output,
+            )
+
+        with gr.Tab("Edit a Review"):
+            edit_book_id_input = gr.Textbox(label="Book ID", placeholder="Enter book ID...")
+            edit_review_id_input = gr.Textbox(label="Review ID", placeholder="Enter review ID...")
+            edit_rating_input = gr.Slider(0, 5, step=0.5, label="New Rating")
+            edit_review_note_input = gr.Textbox(label="New Review Note", placeholder="Update your review...")
+            edit_review_btn = gr.Button("Edit Review")
+            edit_review_output = gr.Textbox(label="Status")
+            edit_review_btn.click(
+                edit_review,
+                inputs=[edit_book_id_input, edit_review_id_input, edit_rating_input, edit_review_note_input],
+                outputs=edit_review_output,
+            )
+
+        with gr.Tab("Delete a Book"):
+            del_book_input = gr.Textbox(label="Delete Book ID", placeholder="Enter book ID...")
+            del_book_btn = gr.Button("Delete Book")
+            del_book_output = gr.Textbox(label="Status")
+            del_book_btn.click(delete_book, inputs=del_book_input, outputs=del_book_output)
+
+        with gr.Tab("Delete a Review"):
+            del_book_id_input = gr.Textbox(label="Book ID", placeholder="Enter book ID...")
+            del_review_id_input = gr.Textbox(label="Review ID", placeholder="Enter review ID...")
+            del_review_btn = gr.Button("Delete Review")
+            del_review_output = gr.Textbox(label="Status")
+            del_review_btn.click(
+                delete_review,
+                inputs=[del_book_id_input, del_review_id_input],
+                outputs=del_review_output,
+            )
+
+        with gr.Tab("Search by Genre"):
+            book_genre_search_input = gr.Textbox(label="Genre", placeholder="Enter genre to search...")
+            book_genre_search_btn = gr.Button("Search by Genre")
+            book_genre_search_output = gr.Textbox(label="Books by Genre", interactive=False)
+            book_genre_search_btn.click(search_books_by_genre, inputs=book_genre_search_input, outputs=book_genre_search_output)
+
+        with gr.Tab("Search Reviews by Book ID"):
+            search_book_id_input = gr.Textbox(label="Book ID", placeholder="Enter book ID...")
+            search_reviews_btn = gr.Button("Search Reviews")
+            search_reviews_output = gr.Textbox(label="Reviews", interactive=False)
+            search_reviews_btn.click(search_reviews, inputs=search_book_id_input, outputs=search_reviews_output)
+
+        with gr.Tab("View Books"):
+            view_books_btn = gr.Button("View All Books")
+            books_display = gr.Textbox(label="Book List", interactive=False)
+            view_books_btn.click(view_books, inputs=[], outputs=books_display)
+
 
 
 if __name__ == "__main__":
