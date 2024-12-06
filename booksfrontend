@@ -1,0 +1,45 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+
+const AddBook = () => {
+  const [title, setTitle] = useState('');
+  const [genre, setGenre] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    axios.post('http://localhost:5000/books', { title, genre })
+      .then((response) => {
+        alert(response.data.message);
+        setTitle('');
+        setGenre('');
+      })
+      .catch((error) => {
+        console.error('Error adding book:', error);
+      });
+  };
+
+  return (
+    <div>
+      <h2>Add Book</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Book Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Genre"
+          value={genre}
+          onChange={(e) => setGenre(e.target.value)}
+          required
+        />
+        <button type="submit">Add Book</button>
+      </form>
+    </div>
+  );
+};
+
+export default AddBook;
