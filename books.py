@@ -84,6 +84,24 @@ def view_books():
     connection.close()
     return books
 
+#search reviews
+def search_reviews(book_id):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM books WHERE id = ?', (book_id,))
+    book = cursor.fetchone()
+    if not book:
+        return {"error": "Book not found."}
+    cursor.execute('SELECT * FROM reviews WHERE book_id = ?', (book_id,))
+    reviews = cursor.fetchall()
+    conn.close()
+    return {
+        "id": book[0],
+        "name": book[1],
+        "genre": book[2],
+        "reviews": [{"review_id": r[0], "rating": r[2], "note": r[3]} for r in reviews]
+    }
+
 # Searching books by genre
 def search_books_by_genre(genre):
     connection = get_connection()

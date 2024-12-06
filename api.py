@@ -131,69 +131,62 @@ def add_book_review(book_id):
 
 
 
-
-@app.route('/tv_shows', methods=['GET'])
-def get_tv_shows():
-    return jsonify(tv_shows.view_shows()), 200
+# Tv_shows Endpoint
+#Mastewal 
 
 @app.route('/tv_shows', methods=['POST'])
 def add_tv_show():
     data = request.get_json()
     title = data.get("title")
     genre = data.get("genre")
-    rating = data.get("rating")
-    
-    if title and genre and rating is not None:
-        return jsonify(tv_shows.add_show(title, genre, rating)), 201
-    return jsonify({"error": "Title, genre, and rating are required"}), 400
+    if title and genre:
+        return jsonify(tv_shows.add_show(title, genre)), 201
+    return jsonify({"error": "TV Show title and genre are required"}), 400
 
-@app.route('/tv_shows/<int:show_id>', methods=['GET'])
-def get_single_tv_show(show_id):
-    show = tv_shows.get_show(show_id)
-    if show:
-        return jsonify(show), 200
-    return jsonify({"error": "TV show not found"}), 404
-
-@app.route('/tv_shows/<int:show_id>', methods=['PUT'])
-def edit_tv_show(show_id):
+@app.route('/tv_shows/<int:tv_show_id>/reviews', methods=['POST'])
+def add_tv_review(tv_show_id):
     data = request.get_json()
-    updated_show = tv_shows.edit_show(show_id, data)
-    
-    if updated_show:
-        return jsonify(updated_show), 200
-    return jsonify({"error": "TV show not found"}), 404
+    rating = data.get("rating")
+    note = data.get("note")
+    if rating and note:
+        return jsonify(tv_shows.add_review(tv_show_id, rating, note)), 201
+    return jsonify({"error": "Rating and note are required"}), 400
 
-@app.route('/tv_shows/<int:show_id>', methods=['DELETE'])
-def delete_tv_show(show_id):
-    success = tv_shows.delete_show(show_id)
-    
-    if success:
-        return jsonify({"message": f"TV show ID {show_id} deleted"}), 200
-    return jsonify({"error": "TV show not found"}), 404
+@app.route('/tv_shows/<int:tv_show_id>/reviews/<int:review_id>', methods=['PUT'])
+def edit_tv_review(tv_show_id, review_id):
+    data = request.get_json()
+    rating = data.get("rating")
+    note = data.get("note")
+    return jsonify(tv_shows.edit_review(tv_show_id, review_id, rating, note))
+
+@app.route('/tv_shows/<int:tv_show_id>/reviews/<int:review_id>', methods=['DELETE'])
+def delete_tv_review(tv_show_id, review_id):
+    return jsonify(tv_shows.delete_review(tv_show_id, review_id))
+
+@app.route('/tv_shows/<int:tv_show_id>', methods=['DELETE'])
+def delete_tv_show(tv_show_id):
+    return jsonify(tv_shows.delete_show(tv_show_id))
+
+@app.route('/tv_shows', methods=['GET'])
+def view_tv_reviews():
+    return jsonify(tv_shows.view_reviews())
+
+@app.route('/tv_shows/<int:tv_show_id>/reviews', methods=['GET'])
+def search_tv_reviews(tv_show_id):
+    return jsonify(tv_shows.search_reviews(tv_show_id))
 
 @app.route('/tv_shows/genre', methods=['GET'])
-def filter_tv_shows_by_genre():
+def search_tv_by_genre():
     genre = request.args.get("genre")
-    
     if not genre:
         return jsonify({"error": "Genre is required"}), 400
-    
     try:
-        result = tv_shows.filter_shows_by_genre(genre)
+        result = tv_shows.search_by_genre(genre)
         return jsonify(result)
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({"error": "An error occurred while filtering by genre."}), 500
+        return jsonify({"error": "An error occurred while searching by genre."}), 500
 
-@app.route('/tv_shows/search', methods=['GET'])
-def search_tv_shows():
-    query = request.args.get('query')
-    
-    if query:
-        results = tv_shows.search_shows(query)  
-        return jsonify(results), 200
-    
-    return jsonify({"error": "Search query is required"}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
